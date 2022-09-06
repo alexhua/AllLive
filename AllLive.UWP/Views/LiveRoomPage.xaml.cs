@@ -309,7 +309,7 @@ namespace AllLive.UWP.Views
                 //    break;
 
                 case Windows.System.VirtualKey.Up:
-                    mediaPlayer.Volume += 10;
+                    SliderVolume.Value += 0.1;
                     TxtToolTip.Text = "音量:" + mediaPlayer.Volume.ToString();
                     ToolTip.Visibility = Visibility.Visible;
                     await Task.Delay(2000);
@@ -317,8 +317,8 @@ namespace AllLive.UWP.Views
                     break;
 
                 case Windows.System.VirtualKey.Down:
-                    mediaPlayer.Volume -= 10;
-                    if (mediaPlayer.Volume == 0)
+                    SliderVolume.Value -= 0.1;
+                    if (mediaPlayer.Volume <= 0)
                     {
                         TxtToolTip.Text = "静音";
                     }
@@ -337,7 +337,7 @@ namespace AllLive.UWP.Views
                 case Windows.System.VirtualKey.F8:
                 case Windows.System.VirtualKey.T:
                     //小窗播放
-                    MiniWidnows(BottomBtnExitMiniWindows.Visibility == Visibility.Visible);
+                    MiniWidnows(StandardControl.Visibility == Visibility.Visible);
 
                     break;
                 case Windows.System.VirtualKey.F12:
@@ -365,7 +365,16 @@ namespace AllLive.UWP.Views
                     //}
                     PlaySWDanmu.IsOn = DanmuControl.Visibility != Visibility.Visible;
                     break;
-
+                case Windows.System.VirtualKey.R:
+                    if (liveRoomVM.Loading) break;
+                    if (mediaPlayer != null)
+                    {
+                        mediaPlayer.Stop();
+                        mediaPlayer.Media?.Dispose();
+                    }
+                    liveRoomVM?.Stop();
+                    liveRoomVM.LoadData(pageArgs.Site, liveRoomVM.RoomID);
+                    break;
                 default:
                     break;
             }
@@ -822,31 +831,16 @@ namespace AllLive.UWP.Views
 
         private void HandleSlideVolumeDelta(double delta)
         {
-            if (delta > 0)
-            {
-                double dd = delta / (this.ActualHeight * 0.8);
+            double dd = -delta / (this.ActualHeight * 0.6);
+            SliderVolume.Value += dd;
 
-                //slider_V.Value -= d;
-                var volume = mediaPlayer.Volume - dd;
-                if (volume < 0) volume = 0;
-                SliderVolume.Value = volume;
-
-            }
-            else
-            {
-                double dd = Math.Abs(delta) / (this.ActualHeight * 0.8);
-                var volume = mediaPlayer.Volume + dd;
-                if (volume > 1) volume = 1;
-                SliderVolume.Value = volume;
-                //slider_V.Value += d;
-            }
-            TxtToolTip.Text = "音量:" + mediaPlayer.Volume.ToString("P");
+            TxtToolTip.Text = "音量:" + SliderVolume.Value.ToString("P");
 
             //Utils.ShowMessageToast("音量:" +  mediaElement.MediaPlayer.Volume.ToString("P"), 3000);
         }
         private void HandleSlideBrightnessDelta(double delta)
         {
-            double dd = Math.Abs(delta) / (this.ActualHeight * 0.8);
+            double dd = Math.Abs(delta) / (this.ActualHeight * 0.6);
             if (delta > 0)
             {
                 Brightness = Math.Min(Brightness + dd, 1);
@@ -863,7 +857,7 @@ namespace AllLive.UWP.Views
             TxtToolTip.Text = "";
             ToolTip.Visibility = Visibility.Visible;
 
-            if (e.Position.X < this.ActualWidth / 2)
+            if (e.Position.X < player.ActualWidth / 2)
                 ManipulatingBrightness = true;
             else
                 ManipulatingBrightness = false;
@@ -943,6 +937,9 @@ namespace AllLive.UWP.Views
                 PlayBtnFullScreen.Visibility = Visibility.Collapsed;
                 PlayBtnExitFullScreen.Visibility = Visibility.Visible;
 
+                PlayBtnFullWindow.Visibility = Visibility.Collapsed;
+                PlayBtnExitFullWindow.Visibility = Visibility.Visible;
+
                 ColumnRight.Width = new GridLength(0, GridUnitType.Pixel);
                 ColumnRight.MinWidth = 0;
                 BottomInfo.Height = new GridLength(0, GridUnitType.Pixel);
@@ -956,6 +953,10 @@ namespace AllLive.UWP.Views
             {
                 PlayBtnFullScreen.Visibility = Visibility.Visible;
                 PlayBtnExitFullScreen.Visibility = Visibility.Collapsed;
+
+                PlayBtnFullWindow.Visibility = Visibility.Visible;
+                PlayBtnExitFullWindow.Visibility = Visibility.Collapsed;
+
                 var width = SettingHelper.GetValue<double>(SettingHelper.RIGHT_DETAIL_WIDTH, 280);
                 ColumnRight.Width = new GridLength(width, GridUnitType.Pixel);
                 //ColumnRight.Width = new GridLength(280, GridUnitType.Pixel);
