@@ -180,9 +180,9 @@ namespace AllLive.Core
             //四条线路
             var lines = new List<string>() {
                 Regex.Replace(url, @".*?\.hls\.huya\.com", "https://tx.hls.huya.com"),
-                Regex.Replace(url, @".*?\.hls\.huya\.com", "https://bd.hls.huya.com"),
+                Regex.Replace(url, @".*?\.hls\.huya\.com", "https://hw.hls.huya.com"),
                 Regex.Replace(url, @".*?\.hls\.huya\.com", "https://al.hls.huya.com"),
-                Regex.Replace(url, @".*?\.hls\.huya\.com", "https://migu-bd.hls.huya.com"),
+                //Regex.Replace(url, @".*?\.hls\.huya\.com", "https://migu-bd.hls.huya.com"),
             };
 
             qualities.Add(new LivePlayQuality()
