@@ -42,11 +42,34 @@ namespace AllLive.UWP.ViewModels
             }
         }
 
+        public async void LoadStatus()
+        {
+            try
+            {
+                Loading = true;
+                foreach (var item in Items)
+                {
+                    var site = MainVM.Sites.Find(x => x.Name == item.SiteName);
+                    var result = await site?.LiveSite.GetRoomDetail(item.RoomID);
+                    item.Status = result.Status;
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleError(ex);
+            }
+            finally
+            {
+                Loading = false;
+            }
+        }
+
         public override void Refresh()
         {
             base.Refresh();
             Items.Clear();
             LoadData();
+            LoadStatus();
         }
 
         public void RemoveItem(HistoryItem item)

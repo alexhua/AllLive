@@ -35,6 +35,7 @@ namespace AllLive.UWP.Views
         {
             base.OnNavigatedTo(e);
             favoriteVM.LoadData();
+            favoriteVM.LoadStatus();
         }
 
         private void ls_ItemClick(object sender, ItemClickEventArgs e)

@@ -46,6 +46,9 @@
                             <TextBlock  Margin="0 4 0 0" FontSize="12" Foreground="Gray">观看于<Run Text="{x:Bind Path=WatchTime}"/>
                             </TextBlock>
                         </StackPanel>
+                        <SymbolIcon Grid.Column="2" Height="36" Width="36" Foreground="#3855BD" VerticalAlignment="Center" HorizontalAlignment="Right" 
+                               Symbol="Play" Visibility="{x:Bind Path=Status, Mode=OneWay}">
+                        </SymbolIcon>
                     </Grid>
                 </DataTemplate>
             </controls:MyAdaptiveGridView.ItemTemplate>
