@@ -7,9 +7,7 @@ using AllLive.Core.Danmaku;
 using AllLive.Core.Helper;
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
-#if !WINDOWS_UWP
-using QuickJS;
-#endif
+using Jint;
 /*
  * 参考：
  * https://github.com/wbt5/real-url/blob/master/douyu.py
@@ -155,47 +153,29 @@ namespace AllLive.Core
             //取加密的js
             html = Regex.Match(html, @"(vdwdae325w_64we[\s\S]*function ub98484234[\s\S]*?)function").Groups[1].Value;
             html = Regex.Replace(html, @"eval.*?;}", "strc;}");
-            var vaa= Environment.CurrentDirectory ;
-            
-#if WINDOWS_UWP
-            var jsonObj = new
-            {
-                html = html,
-                rid = rid
-            };
-            var result = await HttpUtil.PostJsonString("http://alive.nsapps.cn/api/AllLive/DouyuSign", Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj));
-            var obj = JObject.Parse(result);
-            if (obj["code"].ToInt32() == 0)
-            {
-                return obj["data"].ToString();
-            }
-            return "";
-#else
-            using (QuickJSRuntime runtime = new QuickJSRuntime())
-            using (QuickJSContext context = runtime.CreateContext())
-            {
-                var did = "10000000000000000000000000001501";
-                var time = Core.Helper.Utils.GetTimestamp();
+            var engine = new Engine();
+            var did = "10000000000000000000000000001501";
+            var time = Core.Helper.Utils.GetTimestamp();
 
-                context.Eval(html, "", JSEvalFlags.Global);
-                //调用ub98484234函数，返回格式化后的js
-                var jsCode = context.Eval("ub98484234()", "", JSEvalFlags.Global).ToString();
+            engine.Execute(html);
+            //调用ub98484234函数，返回格式化后的js
+            engine.Execute("ub98484234()");
+            var jsCode = engine.GetCompletionValue().ToString();
 
-                var v = Regex.Match(jsCode, @"v=(\d+)").Groups[1].Value;
-                //对参数进行MD5，替换掉JS的CryptoJS\.MD5
-                var rb = Core.Helper.Utils.ToMD5(rid + did + time + v);
+            var v = Regex.Match(jsCode, @"v=(\d+)").Groups[1].Value;
+            //对参数进行MD5，替换掉JS的CryptoJS\.MD5
+            var rb = Core.Helper.Utils.ToMD5(rid + did + time + v);
 
-                var jsCode2 = Regex.Replace(jsCode, @"return rt;}\);?", "return rt;}");
-                //设置方法名为sign
-                jsCode2 = Regex.Replace(jsCode2, @"\(function \(", "function sign(");
-                //将JS中的MD5方法直接替换成加密完成的rb
-                jsCode2 = Regex.Replace(jsCode2, @"CryptoJS\.MD5\(cb\)\.toString\(\)", $@"""{rb}""");
-                context.Eval(jsCode2, "", JSEvalFlags.Global);
-                //返回参数
-                var args = context.Eval($"sign('{rid}','{did}','{time}')", "", JSEvalFlags.Global).ToString();
-                return args;
-            }
-#endif
+            var jsCode2 = Regex.Replace(jsCode, @"return rt;}\);?", "return rt;}");
+            //设置方法名为sign
+            jsCode2 = Regex.Replace(jsCode2, @"\(function \(", "function sign(");
+            //将JS中的MD5方法直接替换成加密完成的rb
+            jsCode2 = Regex.Replace(jsCode2, @"CryptoJS\.MD5\(cb\)\.toString\(\)", $@"""{rb}""");
+            engine.Execute(jsCode2);
+            //返回参数
+            engine.Execute($"sign('{rid}','{did}','{time}')");
+            var args = engine.GetCompletionValue().ToString();
+            return args;
         }
 
         public async Task<LiveSearchResult> Search(string keyword, int page = 1)
