@@ -9,6 +9,8 @@ using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 using System.Text;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Resources;
 
 namespace AllLive.Core
 {
@@ -120,7 +122,7 @@ namespace AllLive.Core
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
         {
             Dictionary<string, string> headers = new Dictionary<string, string>();
-            headers.Add("user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1 Edg/91.0.4472.69");
+            headers.Add("user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1");
             var result = await HttpUtil.GetString($"https://m.huya.com/{roomId}", headers);
             var jsonStr = Regex.Match(result, @"window\.HNF_GLOBAL_INIT.=.\{(.*?)\}.</script>", RegexOptions.Singleline).Groups[1].Value;
             var jsonObj = JObject.Parse($"{{{jsonStr}}}");
@@ -135,7 +137,7 @@ namespace AllLive.Core
                 Introduction = jsonObj["roomInfo"]["tLiveInfo"]["sIntroduction"].ToString(),
                 Notice = jsonObj["welcomeText"].ToString(),
                 Status = jsonObj["roomInfo"]["eLiveStatus"].ToInt32() == 2,
-                Data = "https:" + Encoding.UTF8.GetString(Convert.FromBase64String(jsonObj["roomProfile"]["liveLineUrl"].ToString())),
+                Data = "http:" + Encoding.UTF8.GetString(Convert.FromBase64String(jsonObj["roomProfile"]["liveLineUrl"].ToString())),
                 DanmakuData = new HuyaDanmakuArgs(
                     jsonObj["roomInfo"]["tLiveInfo"]["lYyid"].ToInt64(),
                     result.MatchText(@"lChannelId"":([0-9]+)").ToInt64(),
@@ -173,16 +175,38 @@ namespace AllLive.Core
             searchResult.HasMore = obj["response"]["3"]["numFound"].ToInt32() > (page * 20);
             return searchResult;
         }
+
+        private string generateWsSecret(string StreamName) {
+            const string fm = "DWq8BcJ3h6DJt6TY";
+            const string ctype = "tars_mobile";
+            const string t = "103";
+            long timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            string wsTime = ((long)Math.Truncate(timestamp / 1e3)).ToString("x");
+            long uid = (long)(timestamp % 1e10 * 1e5 + Tup.Utility.Util.Random() % 1e5) % 4294967295;
+            long uuid = (long)(timestamp % 1e10 * 1e3 + Tup.Utility.Util.Random() % 1e3) % 4294967295;
+            long seqid = uid + timestamp;
+            string s = Utils.ToMD5($"{seqid}|{ctype}|{t}");
+            string wsSecret = Utils.ToMD5($"{fm}_{uid}_{StreamName}_{s}_{wsTime}");
+            return $"wsSecret={wsSecret}&wsTime={wsTime}&ver=1&ratio=2000&seqid={seqid}&uid={uid}&uuid={uuid}";
+        }
         public Task<List<LivePlayQuality>> GetPlayQuality(LiveRoomDetail roomDetail)
         {
             List<LivePlayQuality> qualities = new List<LivePlayQuality>();
             var url = roomDetail.Data.ToString();
+            var urls = url.Split('&');
+            var StreamName = urls[0].Split('?')[0].Split('/').Last().Split('.')[0];
+            var wsSecret = generateWsSecret(StreamName);
+            url = $"{urls[0].Replace("/huyalive/","/src/")}&{wsSecret}";
+            for (var i = 4; i < urls.Length; i++) {
+                url += '&' + urls[i];
+            }
+
             //四条线路
             var lines = new List<string>() {
                 Regex.Replace(url, @".*?\.hls\.huya\.com", "https://tx.hls.huya.com"),
                 Regex.Replace(url, @".*?\.hls\.huya\.com", "https://hw.hls.huya.com"),
                 Regex.Replace(url, @".*?\.hls\.huya\.com", "https://al.hls.huya.com"),
-                //Regex.Replace(url, @".*?\.hls\.huya\.com", "https://migu-bd.hls.huya.com"),
+                Regex.Replace(url, @".*?\.hls\.huya\.com", "https://ws.hls.huya.com"),
             };
 
             qualities.Add(new LivePlayQuality()
