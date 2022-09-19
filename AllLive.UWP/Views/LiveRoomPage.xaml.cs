@@ -310,7 +310,7 @@ namespace AllLive.UWP.Views
 
                 case Windows.System.VirtualKey.Up:
                     SliderVolume.Value += 0.1;
-                    TxtToolTip.Text = "音量:" + mediaPlayer.Volume.ToString();
+                    TxtToolTip.Text = "音量 : " + mediaPlayer.Volume.ToString();
                     ToolTip.Visibility = Visibility.Visible;
                     await Task.Delay(2000);
                     ToolTip.Visibility = Visibility.Collapsed;
@@ -324,7 +324,7 @@ namespace AllLive.UWP.Views
                     }
                     else
                     {
-                        TxtToolTip.Text = "音量:" + mediaPlayer.Volume.ToString();
+                        TxtToolTip.Text = "音量 : " + mediaPlayer.Volume.ToString();
                     }
                     ToolTip.Visibility = Visibility.Visible;
                     await Task.Delay(2000);
@@ -834,7 +834,7 @@ namespace AllLive.UWP.Views
             double dd = -delta / (this.ActualHeight * 0.6);
             SliderVolume.Value += dd;
 
-            TxtToolTip.Text = "音量:" + SliderVolume.Value.ToString("P");
+            TxtToolTip.Text = "音量 : " + (int)(SliderVolume.Value * 100);
 
             //Utils.ShowMessageToast("音量:" +  mediaElement.MediaPlayer.Volume.ToString("P"), 3000);
         }
@@ -849,7 +849,7 @@ namespace AllLive.UWP.Views
             {
                 Brightness = Math.Max(Brightness - dd, 0);
             }
-            TxtToolTip.Text = "亮度:" + Math.Abs(Brightness - 1).ToString("P");
+            TxtToolTip.Text = "亮度 : " + (int)(Math.Abs(Brightness - 1) * 100);
         }
         private void Grid_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
         {
