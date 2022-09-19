@@ -342,6 +342,7 @@ namespace AllLive.UWP.Views
                     break;
                 case Windows.System.VirtualKey.F12:
                 case Windows.System.VirtualKey.W:
+                    SettingHelper.SetValue<bool>(SettingHelper.FULL_WINDOW_MODE, PlayBtnFullWindow.Visibility == Visibility.Visible);
                     SetFullWindow(PlayBtnFullWindow.Visibility == Visibility.Visible);
                     break;
                 case Windows.System.VirtualKey.F11:
@@ -620,6 +621,8 @@ namespace AllLive.UWP.Views
                     Utils.ShowMessageToast("更改清晰度或刷新后生效");
                 });
             });
+            var fullWindowMode = SettingHelper.GetValue<bool>(SettingHelper.FULL_WINDOW_MODE, true);
+            SetFullWindow(fullWindowMode);
             //弹幕开关
             var state = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.SHOW,true)?Visibility.Visible:Visibility.Collapsed;
             DanmuControl.Visibility = state;
@@ -936,13 +939,7 @@ namespace AllLive.UWP.Views
               
                 PlayBtnFullScreen.Visibility = Visibility.Collapsed;
                 PlayBtnExitFullScreen.Visibility = Visibility.Visible;
-
-                PlayBtnFullWindow.Visibility = Visibility.Collapsed;
-                PlayBtnExitFullWindow.Visibility = Visibility.Visible;
-
-                ColumnRight.Width = new GridLength(0, GridUnitType.Pixel);
-                ColumnRight.MinWidth = 0;
-                BottomInfo.Height = new GridLength(0, GridUnitType.Pixel);
+                SetFullWindow(true);
                 //全屏
                 if (!view.IsFullScreenMode)
                 {
@@ -953,15 +950,9 @@ namespace AllLive.UWP.Views
             {
                 PlayBtnFullScreen.Visibility = Visibility.Visible;
                 PlayBtnExitFullScreen.Visibility = Visibility.Collapsed;
+                var fullWindowMode = SettingHelper.GetValue<bool>(SettingHelper.FULL_WINDOW_MODE, true);
+                SetFullWindow(fullWindowMode);
 
-                PlayBtnFullWindow.Visibility = Visibility.Visible;
-                PlayBtnExitFullWindow.Visibility = Visibility.Collapsed;
-
-                var width = SettingHelper.GetValue<double>(SettingHelper.RIGHT_DETAIL_WIDTH, 280);
-                ColumnRight.Width = new GridLength(width, GridUnitType.Pixel);
-                //ColumnRight.Width = new GridLength(280, GridUnitType.Pixel);
-                ColumnRight.MinWidth = 100;
-                BottomInfo.Height = GridLength.Auto;
                 //退出全屏
                 if (view.IsFullScreenMode)
                 {
@@ -990,7 +981,8 @@ namespace AllLive.UWP.Views
             }
             else
             {
-                SetFullWindow(false);
+                var fullWindowMode = SettingHelper.GetValue<bool>(SettingHelper.FULL_WINDOW_MODE, true);
+                SetFullWindow(fullWindowMode);
                 StandardControl.Visibility = Visibility.Visible;
                 MiniControl.Visibility = Visibility.Collapsed;
                 await ApplicationView.GetForCurrentView().TryEnterViewModeAsync(ApplicationViewMode.Default);
