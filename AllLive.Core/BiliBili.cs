@@ -7,6 +7,8 @@ using AllLive.Core.Danmaku;
 using AllLive.Core.Helper;
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
+using Helpers;
+using System.Net.Http;
 
 namespace AllLive.Core
 {
@@ -112,7 +114,10 @@ namespace AllLive.Core
                 Rooms = new List<LiveRoomItem>(),
 
             };
-            var result = await HttpUtil.GetString($"https://api.bilibili.com/x/web-interface/search/type?context=&search_type=live&cover_type=user_cover&page={page}&order=&keyword={Uri.EscapeDataString(keyword)}&category_id=&__refresh__=true&_extra=&highlight=0&single_column=0");
+            string Cookie = "buvid3=948E39F3-DE72-66A8-581F-101ED536193508578infoc";
+            var headers = new Dictionary<string, string>();
+            headers.Add("cookie", Cookie);
+            var result = await HttpUtil.GetString($"https://api.bilibili.com/x/web-interface/search/type?context=&search_type=live&cover_type=user_cover&page={page}&order=&keyword={Uri.EscapeDataString(keyword)}&category_id=&__refresh__=true&_extra=&highlight=0&single_column=0", headers);
             var obj = JObject.Parse(result);
            
             foreach (var item in obj["data"]["result"]["live_room"])
