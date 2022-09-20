@@ -137,7 +137,7 @@ namespace AllLive.Core
                 Introduction = jsonObj["roomInfo"]["tLiveInfo"]["sIntroduction"].ToString(),
                 Notice = jsonObj["welcomeText"].ToString(),
                 Status = jsonObj["roomInfo"]["eLiveStatus"].ToInt32() == 2,
-                Data = "http:" + Encoding.UTF8.GetString(Convert.FromBase64String(jsonObj["roomProfile"]["liveLineUrl"].ToString())),
+                Data = jsonObj["roomInfo"]["tLiveInfo"]["tLiveStreamInfo"],
                 DanmakuData = new HuyaDanmakuArgs(
                     jsonObj["roomInfo"]["tLiveInfo"]["lYyid"].ToInt64(),
                     result.MatchText(@"lChannelId"":([0-9]+)").ToInt64(),
@@ -187,63 +187,57 @@ namespace AllLive.Core
             long seqid = uid + timestamp;
             string s = Utils.ToMD5($"{seqid}|{ctype}|{t}");
             string wsSecret = Utils.ToMD5($"{fm}_{uid}_{StreamName}_{s}_{wsTime}");
-            return $"wsSecret={wsSecret}&wsTime={wsTime}&ver=1&ratio=2000&seqid={seqid}&uid={uid}&uuid={uuid}";
+            return $"wsSecret={wsSecret}&wsTime={wsTime}&seqid={seqid}&uid={uid}&uuid={uuid}";
+        }
+        private string pickupUrlParams(params string[] antiCodes)
+        {
+            string result = "ver=1";
+            for (int i = 3; i < antiCodes.Length; i++)
+            {
+                result += '&' + antiCodes[i];
+            }
+            return result;
         }
         public Task<List<LivePlayQuality>> GetPlayQuality(LiveRoomDetail roomDetail)
         {
+            JObject liveStreamInfo = roomDetail.Data as JObject;
             List<LivePlayQuality> qualities = new List<LivePlayQuality>();
-            var url = roomDetail.Data.ToString();
-            var urls = url.Split('&');
-            var StreamName = urls[0].Split('?')[0].Split('/').Last().Split('.')[0];
-            var wsSecret = generateWsSecret(StreamName);
-            url = $"{urls[0].Replace("/huyalive/","/src/")}&{wsSecret}";
-            for (var i = 4; i < urls.Length; i++) {
-                url += '&' + urls[i];
+            foreach (JObject bitRateInfo in liveStreamInfo["vBitRateInfo"]["value"])
+            {   /* Flv */
+                var quality = new LivePlayQuality()
+                {
+                    Quality = bitRateInfo["sDisplayName"].ToString(),
+                    Data = new List<string>()
+                };
+                foreach (JObject streamInfo in liveStreamInfo["vStreamInfo"]["value"])
+                {
+                    ((List<string>)quality.Data).Add(
+                        $"{streamInfo["sFlvUrl"]}/{streamInfo["sStreamName"]}.{streamInfo["sFlvUrlSuffix"]}?" +
+                        $"{generateWsSecret(streamInfo["sStreamName"].ToString())}&ratio={bitRateInfo["iBitRate"]}&" +
+                        pickupUrlParams(streamInfo["sFlvAntiCode"].ToString().Split('&'))
+                    );
+                }
+                qualities.Add(quality);
+                /* Hls */
+                var qualityHls = new LivePlayQuality()
+                {
+                    Quality = bitRateInfo["sDisplayName"].ToString() + "-HLS",
+                    Data = new List<string>()
+                };
+                foreach (JObject streamInfo in liveStreamInfo["vStreamInfo"]["value"])
+                {
+                    ((List<string>)qualityHls.Data).Add(
+                        $"{streamInfo["sHlsUrl"]}/{streamInfo["sStreamName"]}.{streamInfo["sHlsUrlSuffix"]}?" +
+                        $"{generateWsSecret(streamInfo["sStreamName"].ToString())}&ratio={bitRateInfo["iBitRate"]}&" +
+                        pickupUrlParams(streamInfo["sHlsAntiCode"].ToString().Split('&'))
+                    );
+                }
+                qualities.Add(qualityHls);
+                if (qualities.Count == 4) break;
             }
-
-            //四条线路
-            var lines = new List<string>() {
-                Regex.Replace(url, @".*?\.hls\.huya\.com", "https://tx.hls.huya.com"),
-                Regex.Replace(url, @".*?\.hls\.huya\.com", "https://hw.hls.huya.com"),
-                Regex.Replace(url, @".*?\.hls\.huya\.com", "https://al.hls.huya.com"),
-                Regex.Replace(url, @".*?\.hls\.huya\.com", "https://ws.hls.huya.com"),
-            };
-
-            qualities.Add(new LivePlayQuality()
-            {
-                Quality = "原画",
-                Data = lines.Select(x =>
-                {
-                    x = x.Replace("hls.huya.com", "flv.huya.com").Replace("_2000", "").Replace("ratio=2000&", "").Replace(".m3u8", ".flv");
-                    return x;
-                }).ToList()
-            });
-            qualities.Add(new LivePlayQuality()
-            {
-                Quality = "原画HLS",
-                Data = lines.Select(x =>
-                {
-                    x = x.Replace("_2000", "").Replace("ratio=2000&", "");
-                    return x;
-                }).ToList()
-            });
-            qualities.Add(new LivePlayQuality()
-            {
-                Quality = "高清",
-                Data = lines.Select(x =>
-                {
-                    x = x.Replace("hls.huya.com", "flv.huya.com").Replace(".m3u8", ".flv");
-                    return x;
-                }).ToList()
-            });
-            qualities.Add(new LivePlayQuality()
-            {
-                Quality = "高清HLS",
-                Data = lines
-            });
-
             return Task.FromResult(qualities);
         }
+        
         public Task<List<string>> GetPlayUrls(LiveRoomDetail roomDetail, LivePlayQuality qn)
         {
             return Task.FromResult(qn.Data as List<string>);
