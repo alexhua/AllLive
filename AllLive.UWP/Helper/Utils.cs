@@ -1,11 +1,11 @@
 ﻿using AllLive.Core.Helper;
 using AllLive.UWP.Controls;
 using Microsoft.Toolkit.Uwp.Helpers;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
@@ -100,7 +100,7 @@ namespace AllLive.UWP.Helper
             {
                 var url = $"https://cdn.jsdelivr.net/gh/xiaoyaocz/AllLive@master/AllLive.UWP/version.json?ts{new Random().Next(0,99999) }";
                 var result = await HttpUtil.GetString(url);
-                var ver = JsonConvert.DeserializeObject<NewVersion>(result);
+                var ver = JsonSerializer.Deserialize<NewVersion>(result);
                 var num = $"{ SystemInformation.Instance.ApplicationVersion.Major }{ SystemInformation.Instance.ApplicationVersion.Minor.ToString("00")}{ SystemInformation.Instance.ApplicationVersion.Build.ToString("00")}";
                 var v = int.Parse(num);
                 if (ver.versionCode > v)

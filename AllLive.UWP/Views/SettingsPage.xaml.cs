@@ -2,12 +2,12 @@
 using AllLive.UWP.ViewModels;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Microsoft.UI.Xaml.Controls;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text.Json;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.System;
@@ -134,7 +134,7 @@ namespace AllLive.UWP.Views
         {
             var word = (sender as AppBarButton).DataContext as string;
             settingVM.ShieldWords.Remove(word);
-            SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHIELD_WORD, JsonConvert.SerializeObject(settingVM.ShieldWords));
+            SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHIELD_WORD, JsonSerializer.Serialize(settingVM.ShieldWords));
         }
 
         private void LiveDanmuSettingTxtWord_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
@@ -147,11 +147,11 @@ namespace AllLive.UWP.Views
             if (!settingVM.ShieldWords.Contains(LiveDanmuSettingTxtWord.Text))
             {
                 settingVM.ShieldWords.Add(LiveDanmuSettingTxtWord.Text);
-                SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHIELD_WORD,JsonConvert.SerializeObject( settingVM.ShieldWords));
+                SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHIELD_WORD,JsonSerializer.Serialize( settingVM.ShieldWords));
             }
 
             LiveDanmuSettingTxtWord.Text = "";
-            SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHIELD_WORD, JsonConvert.SerializeObject(settingVM.ShieldWords));
+            SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHIELD_WORD, JsonSerializer.Serialize(settingVM.ShieldWords));
         }
 
         private async void BtnGithub_Click(object sender, RoutedEventArgs e)

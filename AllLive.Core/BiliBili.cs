@@ -114,9 +114,11 @@ namespace AllLive.Core
                 Rooms = new List<LiveRoomItem>(),
 
             };
-            string Cookie = "buvid3=948E39F3-DE72-66A8-581F-101ED536193508578infoc";
-            var headers = new Dictionary<string, string>();
-            headers.Add("cookie", Cookie);
+            string Cookie = "buvid3=" + System.Guid.NewGuid(); //"buvid3=948E39F3-DE72-66A8-581F-101ED536193508578infoc";
+            var headers = new Dictionary<string, string>
+            {
+                { "cookie", Cookie }
+            };
             var result = await HttpUtil.GetString($"https://api.bilibili.com/x/web-interface/search/type?context=&search_type=live&cover_type=user_cover&page={page}&order=&keyword={Uri.EscapeDataString(keyword)}&category_id=&__refresh__=true&_extra=&highlight=0&single_column=0", headers);
             var obj = JObject.Parse(result);
            
@@ -134,6 +136,12 @@ namespace AllLive.Core
             searchResult.HasMore = searchResult.Rooms.Count > 0;
             return searchResult;
         }
+
+        private string Guid()
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<List<LivePlayQuality>> GetPlayQuality(LiveRoomDetail roomDetail)
         {
             List<LivePlayQuality> qualities = new List<LivePlayQuality>();
