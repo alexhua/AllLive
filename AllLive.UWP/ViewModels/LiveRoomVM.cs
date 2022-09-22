@@ -300,8 +300,11 @@ namespace AllLive.UWP.ViewModels
                 }
                 if (e.Type == LiveMessageType.Chat)
                 {
-                    if (Messages.Count >= MessageCleanCount)
+                    if (Messages.Count == MessageCleanCount)
                     {
+                        Messages.RemoveAt(0);
+                    }
+                    else if (Messages.Count > MessageCleanCount) { 
                         Messages.Clear();
                     }
                     if (settingVM.ShieldWords != null && settingVM.ShieldWords.Count > 0)

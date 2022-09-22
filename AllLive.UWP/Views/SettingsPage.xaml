@@ -116,7 +116,7 @@
                     <my:NumberBox x:Name="numCleanCount" 
                                   HorizontalAlignment="Right" 
                                   PlaceholderText="清理条数" 
-                                  Minimum="40" 
+                                  Minimum="10" 
                                   Width="100" 
                                   SpinButtonPlacementMode="Compact"/>
                 </Grid>

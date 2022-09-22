@@ -331,7 +331,7 @@
                                 <TextBlock Margin="0 12 0 0">互动文字大小</TextBlock>
                                 <my:NumberBox x:Name="numFontsize" Margin="0 4 0 0"  PlaceholderText="请输入文字大小" Minimum="10" Maximum="64" Width="140" HorizontalAlignment="Left" SpinButtonPlacementMode="Compact"/>
                                 <TextBlock Margin="0 12 0 0">互动自动清理</TextBlock>
-                                <my:NumberBox x:Name="numCleanCount" Margin="0 4 0 0" PlaceholderText="请输入整数" Minimum="40" Width="140" HorizontalAlignment="Left" SpinButtonPlacementMode="Compact"/>
+                                <my:NumberBox x:Name="numCleanCount" Margin="0 4 0 0" PlaceholderText="请输入整数" Minimum="10" Width="140" HorizontalAlignment="Left" SpinButtonPlacementMode="Compact"/>
                                 <TextBlock Margin="0 12 0 0">屏蔽关键字</TextBlock>
                                 <AutoSuggestBox x:Name="LiveDanmuSettingTxtWord" QuerySubmitted="LiveDanmuSettingTxtWord_QuerySubmitted"  Margin="0 4 0 0" QueryIcon="Add" PlaceholderText="输入关键字"></AutoSuggestBox>
                                 <ListView x:Name="LiveDanmuSettingListWords" Margin="0 4 0 0" Background="#19808080" Height="240" >
