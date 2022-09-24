@@ -8,7 +8,7 @@
   IgnorableNamespaces="uap mp uap3">
 
   <Identity
-    Name="5421.24244EC421563"
+    Name="AllLive.UWP"
     Publisher="CN=Test"
     Version="1.1.4.0" />
 
