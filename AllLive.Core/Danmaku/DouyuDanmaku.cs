@@ -1,13 +1,12 @@
 ﻿using AllLive.Core.Helper;
 using AllLive.Core.Interface;
 using AllLive.Core.Models;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Timers;
@@ -183,11 +182,11 @@ namespace AllLive.Core.Danmaku
 
         }
         //辣鸡STT
-        private JToken SttToJObject(string str)
+        private JsonNode SttToJObject(string str)
         {
             if (str.Contains("//"))
             {
-                var result = new JArray();
+                var result = new JsonArray();
                 foreach (var field in str.Split(new[] { "//" }, StringSplitOptions.RemoveEmptyEntries))
                 {
                     result.Add(SttToJObject(field));
@@ -196,7 +195,7 @@ namespace AllLive.Core.Danmaku
             }
             if (str.Contains("@="))
             {
-                var result = new JObject();
+                var result = new JsonObject();
                 foreach (var field in str.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries))
                 {
                     var tokens = field.Split(new[] { "@=" }, StringSplitOptions.None);

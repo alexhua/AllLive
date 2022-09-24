@@ -1,13 +1,13 @@
 ﻿using AllLive.Core.Helper;
 using AllLive.Core.Interface;
 using AllLive.Core.Models;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Timers;
@@ -43,7 +43,7 @@ namespace AllLive.Core.Danmaku
             await Task.Run(() =>
             {
                 //发送进房信息
-                ws.Send(EncodeData(JsonConvert.SerializeObject(new
+                ws.Send(EncodeData(JsonSerializer.Serialize(new
                 {
                     roomid = roomId,
                     uid = 0
@@ -143,14 +143,14 @@ namespace AllLive.Core.Danmaku
         {
             try
             {
-                var obj = JObject.Parse(jsonMessage);
+                var obj = JsonNode.Parse(jsonMessage);
                 var cmd = obj["cmd"].ToString();
                 if (cmd.Contains("DANMU_MSG"))
                 {
-                    if (obj["info"] != null && obj["info"].ToArray().Length != 0)
+                    if (obj["info"] != null && obj["info"].AsArray().Count != 0)
                     {
                         var message = obj["info"][1].ToString();
-                        if (obj["info"][2] != null && obj["info"][2].ToArray().Length != 0)
+                        if (obj["info"][2] != null && obj["info"][2].AsArray().Count != 0)
                         {
                             var username = obj["info"][2][1].ToString();
                             NewMessage?.Invoke(this, new LiveMessage()

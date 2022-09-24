@@ -5,13 +5,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AllLive.Core.Danmaku;
 using AllLive.Core.Helper;
-using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 using Jint;
+using System.Text.Json.Nodes;
 /*
- * 参考：
- * https://github.com/wbt5/real-url/blob/master/douyu.py
- */
+* 参考：
+* https://github.com/wbt5/real-url/blob/master/douyu.py
+*/
 namespace AllLive.Core
 {
     public class Douyu : ILiveSite
@@ -62,8 +62,8 @@ namespace AllLive.Core
         {
             List<LiveSubCategory> subs = new List<LiveSubCategory>();
             var result = await HttpUtil.GetString($"https://www.douyu.com/japi/weblist/api/getC2List?shortName={ id}&offset=0&limit=200");
-            var obj = JObject.Parse(result);
-            foreach (var item in obj["data"]["list"])
+            var obj = JsonNode.Parse(result);
+            foreach (var item in obj["data"]["list"].AsArray())
             {
                 subs.Add(new LiveSubCategory()
                 {
@@ -83,9 +83,9 @@ namespace AllLive.Core
 
             };
             var result = await HttpUtil.GetString($"https://www.douyu.com/gapi/rkc/directory/mixList/2_{ category.ID}/{page}");
-            var obj = JObject.Parse(result);
+            var obj = JsonNode.Parse(result);
 
-            foreach (var item in obj["data"]["rl"])
+            foreach (var item in obj["data"]["rl"].AsArray())
             {
                 if (item["type"].ToInt32() == 1)
                     categoryResult.Rooms.Add(new LiveRoomItem()
@@ -108,8 +108,8 @@ namespace AllLive.Core
 
             };
             var result = await HttpUtil.GetString($"https://www.douyu.com/japi/weblist/apinc/allpage/6/{page}");
-            var obj = JObject.Parse(result);
-            foreach (var item in obj["data"]["rl"])
+            var obj = JsonNode.Parse(result);
+            foreach (var item in obj["data"]["rl"].AsArray())
             {
                 categoryResult.Rooms.Add(new LiveRoomItem()
                 {
@@ -130,7 +130,7 @@ namespace AllLive.Core
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1 Edg/91.0.4472.69");
             var result_json = await HttpUtil.GetString($"https://m.douyu.com/{roomId}", headers);
-            var obj = JObject.Parse($"{{{result_json.MatchText(@"\$ROOM.=.{(.*?)}")}}}");
+            var obj = JsonNode.Parse($"{{{result_json.MatchText(@"\$ROOM.=.{(.*?)}")}}}");
             return new LiveRoomDetail()
             {
                 Cover = obj["roomSrc"].ToString(),
@@ -186,9 +186,9 @@ namespace AllLive.Core
 
             };
             var result = await HttpUtil.GetString($"https://www.douyu.com/japi/search/api/searchShow?kw={ Uri.EscapeDataString(keyword)}&page={ page}&pageSize=20");
-            var obj = JObject.Parse(result);
+            var obj = JsonNode.Parse(result);
 
-            foreach (var item in obj["data"]["relateShow"])
+            foreach (var item in obj["data"]["relateShow"].AsArray())
             {
                 searchResult.Rooms.Add(new LiveRoomItem()
                 {
@@ -199,7 +199,7 @@ namespace AllLive.Core
                     UserName = item["nickName"].ToString(),
                 });
             }
-            searchResult.HasMore = ((JArray)obj["data"]["relateShow"]).Count > 0;
+            searchResult.HasMore = obj["data"]["relateShow"].AsArray().Count > 0;
             return searchResult;
         }
         public async Task<List<LivePlayQuality>> GetPlayQuality(LiveRoomDetail roomDetail)
@@ -208,13 +208,13 @@ namespace AllLive.Core
             data += $"&cdn=&rate=0";
             List<LivePlayQuality> qualities = new List<LivePlayQuality>();
             var result = await HttpUtil.PostString($"https://www.douyu.com/lapi/live/getH5Play/{ roomDetail.RoomID}", data);
-            var obj = JObject.Parse(result);
+            var obj = JsonNode.Parse(result);
             var cdns = new List<string>();
-            foreach (var item in obj["data"]["cdnsWithName"])
+            foreach (var item in obj["data"]["cdnsWithName"].AsArray())
             {
                 cdns.Add(item["cdn"].ToString());
             }
-            foreach (var item in obj["data"]["multirates"])
+            foreach (var item in obj["data"]["multirates"].AsArray())
             {
                 qualities.Add(new LivePlayQuality()
                 {
@@ -246,7 +246,7 @@ namespace AllLive.Core
             {
                 args += $"&cdn={cdn}&rate={rate}";
                 var result = await HttpUtil.PostString($"https://www.douyu.com/lapi/live/getH5Play/{rid}", args);
-                var obj = JObject.Parse(result);
+                var obj = JsonNode.Parse(result);
                 return obj["data"]["rtmp_url"].ToString() + "/" + System.Net.WebUtility.HtmlDecode(obj["data"]["rtmp_live"].ToString());
             }
             catch (Exception)

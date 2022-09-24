@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AllLive.Core.Danmaku;
 using AllLive.Core.Helper;
-using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 using Helpers;
 using System.Net.Http;
+using System.Text.Json.Nodes;
 
 namespace AllLive.Core
 {
@@ -21,11 +21,11 @@ namespace AllLive.Core
         {
             List<LiveCategory> categories = new List<LiveCategory>();
             var result =await HttpUtil.GetString("https://api.live.bilibili.com/room/v1/Area/getList?need_entrance=1&parent_id=0");
-            var obj = JObject.Parse(result);
-            foreach (var item in obj["data"])
+            var obj = JsonNode.Parse(result);
+            foreach (var item in obj["data"].AsArray())
             {
                 List<LiveSubCategory> subs = new List<LiveSubCategory>();
-                foreach (var subItem in item["list"])
+                foreach (var subItem in item["list"].AsArray())
                 {
                     subs.Add(new LiveSubCategory() { 
                         Pic= subItem["pic"].ToString() + "@100w.png",
@@ -50,9 +50,9 @@ namespace AllLive.Core
                
             };
             var result = await HttpUtil.GetString($"https://api.live.bilibili.com/xlive/web-interface/v1/second/getList?platform=web&parent_area_id={category.ParentID}&area_id={category.ID}&sort_type=&page={page}");
-            var obj = JObject.Parse(result);
+            var obj = JsonNode.Parse(result);
             categoryResult.HasMore =obj["data"]["has_more"].ToInt32() == 1;
-            foreach (var item in obj["data"]["list"])
+            foreach (var item in obj["data"]["list"].AsArray())
             {
                 categoryResult.Rooms.Add(new LiveRoomItem() { 
                     Cover= item["cover"].ToString() + "@300w.jpg",
@@ -72,9 +72,9 @@ namespace AllLive.Core
 
             };
             var result = await HttpUtil.GetString($"https://api.live.bilibili.com/room/v1/Area/getListByAreaID?areaId=0&sort=online&pageSize=30&page={page}");
-            var obj = JObject.Parse(result);
-            categoryResult.HasMore = ((JArray)obj["data"]).Count > 0;
-            foreach (var item in obj["data"])
+            var obj = JsonNode.Parse(result);
+            categoryResult.HasMore = (obj["data"].AsArray()).Count > 0;
+            foreach (var item in obj["data"].AsArray())
             {
                 categoryResult.Rooms.Add(new LiveRoomItem()
                 {
@@ -90,7 +90,7 @@ namespace AllLive.Core
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
         {
             var result = await HttpUtil.GetString($"https://api.live.bilibili.com/xlive/web-room/v1/index/getH5InfoByRoom?room_id={ roomId}");
-            var obj = JObject.Parse(result);
+            var obj = JsonNode.Parse(result);
 
             return new LiveRoomDetail()
             {
@@ -120,9 +120,9 @@ namespace AllLive.Core
                 { "cookie", Cookie }
             };
             var result = await HttpUtil.GetString($"https://api.bilibili.com/x/web-interface/search/type?context=&search_type=live&cover_type=user_cover&page={page}&order=&keyword={Uri.EscapeDataString(keyword)}&category_id=&__refresh__=true&_extra=&highlight=0&single_column=0", headers);
-            var obj = JObject.Parse(result);
+            var obj = JsonNode.Parse(result);
            
-            foreach (var item in obj["data"]["result"]["live_room"])
+            foreach (var item in obj["data"]["result"]["live_room"].AsArray())
             {
                 searchResult.Rooms.Add(new LiveRoomItem()
                 {
@@ -146,8 +146,8 @@ namespace AllLive.Core
         {
             List<LivePlayQuality> qualities = new List<LivePlayQuality>();
             var result = await HttpUtil.GetString($"https://api.live.bilibili.com/room/v1/Room/playUrl?cid={roomDetail.RoomID}&qn=&platform=web");
-            var obj = JObject.Parse(result);
-            foreach (var item in obj["data"]["quality_description"])
+            var obj = JsonNode.Parse(result);
+            foreach (var item in obj["data"]["quality_description"].AsArray())
             {
                 qualities.Add(new LivePlayQuality() { 
                     Quality= item["desc"].ToString(),
@@ -160,8 +160,8 @@ namespace AllLive.Core
         {
             List<string> urls = new List<string>();
             var result = await HttpUtil.GetString($"https://api.live.bilibili.com/room/v1/Room/playUrl?cid={roomDetail.RoomID}&qn={qn.Data}&platform=web");
-            var obj = JObject.Parse(result);
-            foreach (var item in obj["data"]["durl"])
+            var obj = JsonNode.Parse(result);
+            foreach (var item in obj["data"]["durl"].AsArray())
             {
                 urls.Add(item["url"].ToString());
             }

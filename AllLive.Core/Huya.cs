@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AllLive.Core.Danmaku;
 using AllLive.Core.Helper;
-using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 using System.Text;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Resources;
+using System.Text.Json.Nodes;
 
 namespace AllLive.Core
 {
@@ -49,8 +49,8 @@ namespace AllLive.Core
         {
             List<LiveSubCategory> subs = new List<LiveSubCategory>();
             var result = await HttpUtil.GetString($"https://live.cdn.huya.com/liveconfig/game/bussLive?bussType={id}");
-            var obj = JObject.Parse(result);
-            foreach (var item in obj["data"])
+            var obj = JsonNode.Parse(result);
+            foreach (var item in obj["data"].AsArray())
             {
                 subs.Add(new LiveSubCategory()
                 {
@@ -70,8 +70,8 @@ namespace AllLive.Core
 
             };
             var result = await HttpUtil.GetString($"https://www.huya.com/cache.php?m=LiveList&do=getLiveListByPage&tagAll=0&gameId={category.ID}&page={page}");
-            var obj = JObject.Parse(result);
-            foreach (var item in obj["data"]["datas"])
+            var obj = JsonNode.Parse(result);
+            foreach (var item in obj["data"]["datas"].AsArray())
             {
                 var cover = item["screenshot"].ToString();
                 if (!cover.Contains("?x-oss-process"))
@@ -98,9 +98,9 @@ namespace AllLive.Core
 
             };
             var result = await HttpUtil.GetString($"https://www.huya.com/cache.php?m=LiveList&do=getLiveListByPage&tagAll=0&page={page}");
-            var obj = JObject.Parse(result);
+            var obj = JsonNode.Parse(result);
 
-            foreach (var item in obj["data"]["datas"])
+            foreach (var item in obj["data"]["datas"].AsArray())
             {
                 var cover = item["screenshot"].ToString();
                 if (!cover.Contains("?x-oss-process"))
@@ -125,7 +125,7 @@ namespace AllLive.Core
             headers.Add("user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1");
             var result = await HttpUtil.GetString($"https://m.huya.com/{roomId}", headers);
             var jsonStr = Regex.Match(result, @"window\.HNF_GLOBAL_INIT.=.\{(.*?)\}.</script>", RegexOptions.Singleline).Groups[1].Value;
-            var jsonObj = JObject.Parse($"{{{jsonStr}}}");
+            var jsonObj = JsonNode.Parse($"{{{jsonStr}}}");
             return new LiveRoomDetail()
             {
                 Cover = jsonObj["roomInfo"]["tLiveInfo"]["sScreenshot"].ToString(),
@@ -154,9 +154,9 @@ namespace AllLive.Core
 
             };
             var result = await HttpUtil.GetUtf8String($"https://search.cdn.huya.com/?m=Search&do=getSearchContent&q={ Uri.EscapeDataString(keyword)}&uid=0&v=4&typ=-5&livestate=0&rows=20&start={(page - 1) * 20}");
-            var obj = JObject.Parse(result);
+            var obj = JsonNode.Parse(result);
 
-            foreach (var item in obj["response"]["3"]["docs"])
+            foreach (var item in obj["response"]["3"]["docs"].AsArray())
             {
                 var cover = item["game_screenshot"].ToString();
                 if (!cover.Contains("?x-oss-process"))
@@ -200,16 +200,16 @@ namespace AllLive.Core
         }
         public Task<List<LivePlayQuality>> GetPlayQuality(LiveRoomDetail roomDetail)
         {
-            JObject liveStreamInfo = roomDetail.Data as JObject;
+            JsonNode liveStreamInfo = roomDetail.Data as JsonNode;
             List<LivePlayQuality> qualities = new List<LivePlayQuality>();
-            foreach (JObject bitRateInfo in liveStreamInfo["vBitRateInfo"]["value"])
+            foreach (JsonNode bitRateInfo in liveStreamInfo["vBitRateInfo"]["value"].AsArray())
             {   /* Flv */
                 var quality = new LivePlayQuality()
                 {
                     Quality = bitRateInfo["sDisplayName"].ToString(),
                     Data = new List<string>()
                 };
-                foreach (JObject streamInfo in liveStreamInfo["vStreamInfo"]["value"])
+                foreach (JsonNode streamInfo in liveStreamInfo["vStreamInfo"]["value"].AsArray())
                 {
                     ((List<string>)quality.Data).Add(
                         $"{streamInfo["sFlvUrl"]}/{streamInfo["sStreamName"]}.{streamInfo["sFlvUrlSuffix"]}?" +
@@ -224,7 +224,7 @@ namespace AllLive.Core
                     Quality = bitRateInfo["sDisplayName"].ToString() + "-HLS",
                     Data = new List<string>()
                 };
-                foreach (JObject streamInfo in liveStreamInfo["vStreamInfo"]["value"])
+                foreach (JsonNode streamInfo in liveStreamInfo["vStreamInfo"]["value"].AsArray())
                 {
                     ((List<string>)qualityHls.Data).Add(
                         $"{streamInfo["sHlsUrl"]}/{streamInfo["sStreamName"]}.{streamInfo["sHlsUrlSuffix"]}?" +
