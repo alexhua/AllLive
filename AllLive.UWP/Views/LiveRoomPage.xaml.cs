@@ -31,6 +31,7 @@ using Windows.ApplicationModel.Core;
 using LibVLCSharp.Shared;
 using System.Diagnostics;
 using System.Text.Json;
+using Microsoft.Toolkit.Uwp.UI;
 
 // https://go.microsoft.com/fwlink/?LinkId=234238 上介绍了“空白页”项模板
 
@@ -331,8 +332,20 @@ namespace AllLive.UWP.Views
                     ToolTip.Visibility = Visibility.Collapsed;
                     break;
                 case Windows.System.VirtualKey.Escape:
-                    SetFullScreen(false);
-
+                    if (isMini)
+                    {
+                        MiniWidnows(false);
+                    }
+                    else if (PlayBtnFullScreen.Visibility == Visibility.Visible)
+                    {
+                        Frame parentFrame = this.FindParent("MainFrame") as Frame;
+                        if (parentFrame != null && parentFrame.CanGoBack)
+                            parentFrame.GoBack();
+                    }
+                    else
+                    {
+                        SetFullScreen(false);
+                    }
                     break;
                 case Windows.System.VirtualKey.F8:
                 case Windows.System.VirtualKey.T:
@@ -824,6 +837,7 @@ namespace AllLive.UWP.Views
         private void Grid_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
             e.Handled = true;
+            ToolTip.Visibility = Visibility.Visible;
             //progress.Visibility = Visibility.Visible;
             if (ManipulatingBrightness)
                 HandleSlideBrightnessDelta(e.Delta.Translation.Y);
@@ -858,7 +872,6 @@ namespace AllLive.UWP.Views
         {
             e.Handled = true;
             TxtToolTip.Text = "";
-            ToolTip.Visibility = Visibility.Visible;
 
             if (e.Position.X < player.ActualWidth / 2)
                 ManipulatingBrightness = true;
