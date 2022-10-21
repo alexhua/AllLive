@@ -21,7 +21,7 @@ using NSDanmaku.Model;
 using Windows.Media.Playback;
 using Windows.UI.ViewManagement;
 using Windows.UI.Popups;
-using FFmpegInterop;
+using FFmpegInteropX;
 using Windows.System.Display;
 using System.Threading.Tasks;
 using Windows.Storage;
@@ -45,8 +45,8 @@ namespace AllLive.UWP.Views
         readonly LiveRoomVM liveRoomVM;
         readonly SettingVM settingVM;
         readonly MediaPlayer mediaPlayer;
-        readonly FFmpegInteropConfig _config;
-        FFmpegInterop.FFmpegInteropMSS interopMSS;
+        readonly MediaSourceConfig _config;
+        FFmpegMediaSource ffmpegMSS;
         DisplayRequest dispRequest;
         PageArgs pageArgs;
         //当前处于小窗
@@ -62,8 +62,8 @@ namespace AllLive.UWP.Views
             liveRoomVM = new LiveRoomVM(settingVM);
             liveRoomVM.Dispatcher = this.Dispatcher;
             dispRequest = new DisplayRequest();
-            _config = new FFmpegInteropConfig();
-            _config.FFmpegOptions.Add("rtsp_transport", "tcp");
+            _config = new MediaSourceConfig();
+            //_config.FFmpegOptions.Add("rtsp_flags", "prefer_tcp");
             Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
             liveRoomVM.ChangedPlayUrl += LiveRoomVM_ChangedPlayUrl;
             liveRoomVM.AddDanmaku += LiveRoomVM_AddDanmaku;
@@ -195,11 +195,6 @@ namespace AllLive.UWP.Views
                         mediaPlayer.Pause();
                         mediaPlayer.Source = null;
                     }
-                    if (interopMSS != null)
-                    {
-                        interopMSS.Dispose();
-                        interopMSS = null;
-                    }
                     liveRoomVM?.Stop();
                     liveRoomVM.LoadData(pageArgs.Site, liveRoomVM.RoomID);
                     break;
@@ -224,14 +219,15 @@ namespace AllLive.UWP.Views
                     mediaPlayer.Pause();
                     mediaPlayer.Source = null;
                 }
-                if (interopMSS != null)
+                if (ffmpegMSS != null)
                 {
-                    interopMSS.Dispose();
-                    interopMSS = null;
+                    ffmpegMSS.Dispose();
+                    ffmpegMSS = null;
                 }
-                interopMSS = await FFmpegInteropMSS.CreateFromUriAsync(url, _config);
+                _config.DefaultBufferTimeUri = TimeSpan.FromSeconds(0);
+                ffmpegMSS = await FFmpegMediaSource.CreateFromUriAsync(url, _config);
                 mediaPlayer.AutoPlay = true;
-                mediaPlayer.Source = interopMSS.CreateMediaPlaybackItem();
+                mediaPlayer.Source = ffmpegMSS.CreateMediaPlaybackItem();
                 player.SetMediaPlayer(mediaPlayer);
             }
             catch (Exception ex)
@@ -250,10 +246,10 @@ namespace AllLive.UWP.Views
                 mediaPlayer.Pause();
                 mediaPlayer.Source = null;
             }
-            if (interopMSS != null)
+            if (ffmpegMSS != null)
             {
-                interopMSS.Dispose();
-                interopMSS = null;
+                ffmpegMSS.Dispose();
+                ffmpegMSS = null;
             }
             liveRoomVM?.Stop();
          
@@ -269,7 +265,7 @@ namespace AllLive.UWP.Views
                 catch (Exception)
                 {
                 }
-                
+
                 dispRequest = null;
             }
         }
@@ -314,7 +310,6 @@ namespace AllLive.UWP.Views
           
             liveRoomVM.AddDanmaku -= LiveRoomVM_AddDanmaku;
             StopPlay();
-
             Window.Current.CoreWindow.KeyDown -= CoreWindow_KeyDown;
 
             base.OnNavigatingFrom(e);
@@ -372,8 +367,6 @@ namespace AllLive.UWP.Views
             }
         }
 
-
-
         private void LoadSetting()
         {
             //右侧宽度
@@ -423,36 +416,6 @@ namespace AllLive.UWP.Views
                 });
             });
 
-            //cbDecode.Loaded += new RoutedEventHandler((sender, e) =>
-            //{
-            //    cbDecode.Toggled += new RoutedEventHandler((obj, args) =>
-            //    {
-            //        SettingHelper.SetValue(SettingHelper.SORTWARE_DECODING, swSoftwareDecode.IsOn);
-            //        if (swSoftwareDecode.IsOn)
-            //        {
-            //            _config.VideoDecoderMode = VideoDecoderMode.ForceFFmpegSoftwareDecoder;
-            //        }
-            //        else
-            //        {
-            //            _config.VideoDecoderMode = VideoDecoderMode.Automatic;
-            //        }
-            //        Utils.ShowMessageToast("更改清晰度或刷新后生效");
-            //    });
-            //});
-
-            swSoftwareDecode.Loaded += new RoutedEventHandler((sender, e) =>
-            {
-                swSoftwareDecode.Toggled += new RoutedEventHandler((obj, args) =>
-                {
-                    SettingHelper.SetValue(SettingHelper.SORTWARE_DECODING, swSoftwareDecode.IsOn);
-                    if (mediaPlayer != null)
-                    {
-                        mediaPlayer.EnableHardwareDecoding = !swSoftwareDecode.IsOn;
-                    }
-
-                    Utils.ShowMessageToast("更改清晰度或刷新后生效");
-                });
-            });
             var fullWindowMode = SettingHelper.GetValue<bool>(SettingHelper.FULL_WINDOW_MODE, true);
             SetFullWindow(fullWindowMode);
             //弹幕开关
@@ -635,10 +598,18 @@ namespace AllLive.UWP.Views
         {
             await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
             {
-                //保持屏幕常亮
-                dispRequest.RequestActive();
-                PlayerLoading.Visibility = Visibility.Collapsed;
-                SetMediaInfo();
+
+                if (dispRequest == null)
+                {  //页面已经退出,异步MSS需销毁
+                    ffmpegMSS?.Dispose();
+                    ffmpegMSS = null;
+                }
+                else
+                {   //保持屏幕常亮
+                    dispRequest.RequestActive();
+                    PlayerLoading.Visibility = Visibility.Collapsed;
+                    SetMediaInfo();
+                }
             });
         }
 
@@ -678,12 +649,15 @@ namespace AllLive.UWP.Views
             {
                 var str = $"Url: {liveRoomVM.CurrentLine?.Url ?? ""}\r\n";
                 str += $"Quality: {liveRoomVM.CurrentQuality?.Quality ?? ""}\r\n";
-                str += $"Video Codec: {interopMSS.CurrentVideoStream.CodecName}\r\nAudio Codec:{interopMSS.CurrentAudioStream?.CodecName??""}\r\n";
-                str += $"Resolution: {interopMSS.CurrentVideoStream.PixelWidth} x {interopMSS.CurrentVideoStream.PixelHeight}\r\n";
-                str += $"FPS: {interopMSS.CurrentVideoStream.FramesPerSecond}\r\n";
-                str += $"Video Bitrate: {interopMSS.CurrentVideoStream.Bitrate / 1024} Kbps\r\n";
-                str += $"Audio Bitrate: {interopMSS.AudioStreams[0].Bitrate / 1024} Kbps\r\n";
-                str += $"Decoder Engine: {interopMSS.CurrentVideoStream.DecoderEngine.ToString()}";
+                if (ffmpegMSS != null)
+                {
+                    str += $"Video Codec: {ffmpegMSS.CurrentVideoStream.CodecName}\r\nAudio Codec:{ffmpegMSS.CurrentAudioStream?.CodecName ?? ""}\r\n";
+                    str += $"Resolution: {ffmpegMSS.CurrentVideoStream.PixelWidth} x {ffmpegMSS.CurrentVideoStream.PixelHeight}\r\n";
+                    str += $"FPS: {ffmpegMSS.CurrentVideoStream.FramesPerSecond}\r\n";
+                    str += $"Video Bitrate: {ffmpegMSS.CurrentVideoStream.Bitrate / 1024} Kbps\r\n";
+                    str += $"Audio Bitrate: {ffmpegMSS.AudioStreams[0].Bitrate / 1024} Kbps\r\n";
+                    str += $"Decoder Engine: {ffmpegMSS.CurrentVideoStream.DecoderEngine}";
+                }
                 txtInfo.Text = str;
             }
             catch (Exception ex)
@@ -995,11 +969,6 @@ namespace AllLive.UWP.Views
             {
                 mediaPlayer.Pause();
                 mediaPlayer.Source = null;
-            }
-            if (interopMSS != null)
-            {
-                interopMSS.Dispose();
-                interopMSS = null;
             }
             liveRoomVM?.Stop();
             liveRoomVM.LoadData(pageArgs.Site, liveRoomVM.RoomID);

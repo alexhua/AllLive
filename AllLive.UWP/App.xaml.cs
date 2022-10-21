@@ -1,5 +1,5 @@
 ﻿using AllLive.UWP.Helper;
-using FFmpegInterop;
+using FFmpegInteropX;
 using System;
 using System.Collections.Generic;
 using System.IO;
