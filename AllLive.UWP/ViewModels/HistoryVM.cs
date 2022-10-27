@@ -2,11 +2,10 @@
 using AllLive.UWP.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using AllLive.Core.Models;
 
 namespace AllLive.UWP.ViewModels
 {
@@ -26,32 +25,20 @@ namespace AllLive.UWP.ViewModels
             try
             {
                 Loading = true;
+                var QueryStatusTasks = new List<Task<LiveRoomDetail>>();
                 foreach (var item in await DatabaseHelper.GetHistory())
                 {
                     Items.Add(item);
+                    var site = MainVM.Sites.Find(x => x.Name == item.SiteName);
+                    QueryStatusTasks.Add(site.LiveSite.GetRoomDetail(item.RoomID));
                 }
                 IsEmpty = Items.Count == 0;
-            }
-            catch (Exception ex)
-            {
-                HandleError(ex);
-            }
-            finally
-            {
-                Loading = false;
-            }
-        }
-
-        public async void LoadStatus()
-        {
-            try
-            {
-                Loading = true;
-                foreach (var item in Items)
+                if (!IsEmpty)
                 {
-                    var site = MainVM.Sites.Find(x => x.Name == item.SiteName);
-                    var result = await site?.LiveSite.GetRoomDetail(item.RoomID);
-                    item.Status = result.Status;
+                    foreach (var Task in QueryStatusTasks) {
+                        var Result = await Task;
+                        Items[QueryStatusTasks.IndexOf(Task)].Status = Result.Status;
+                    }
                 }
             }
             catch (Exception ex)
@@ -62,14 +49,13 @@ namespace AllLive.UWP.ViewModels
             {
                 Loading = false;
             }
-        }
+        }       
 
         public override void Refresh()
         {
             base.Refresh();
             Items.Clear();
             LoadData();
-            LoadStatus();
         }
 
         public void RemoveItem(HistoryItem item)

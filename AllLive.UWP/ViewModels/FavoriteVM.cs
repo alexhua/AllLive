@@ -2,10 +2,9 @@
 using AllLive.UWP.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Collections.ObjectModel;
+using AllLive.Core.Models;
 
 namespace AllLive.UWP.ViewModels
 {
@@ -19,36 +18,26 @@ namespace AllLive.UWP.ViewModels
         }
 
         public async void LoadData()
-        {
+        {            
             try
             {
                 Loading = true;
+                var QueryStatusTasks = new List<Task<LiveRoomDetail>>();
                 foreach (var item in await DatabaseHelper.GetFavorites())
-                { 
+                {
                     Items.Add(item);
+                    var Site = MainVM.Sites.Find(x => x.Name == item.SiteName);
+                    QueryStatusTasks.Add(Site.LiveSite.GetRoomDetail(item.RoomID));
                 }
                 IsEmpty = Items.Count == 0;
-            }
-            catch (Exception ex)
-            {
-                HandleError(ex);
-            }
-            finally
-            {
-                Loading = false;
-            }
-        }
 
-        public async void LoadStatus()
-        {
-            try
-            {
-                Loading = true;
-                foreach (var item in Items)
+                if (!IsEmpty)
                 {
-                    var site = MainVM.Sites.Find(x => x.Name == item.SiteName);
-                    var result = await site?.LiveSite.GetRoomDetail(item.RoomID);
-                    item.Status = result.Status;
+                    var Details = await Task.WhenAll<LiveRoomDetail>(QueryStatusTasks);
+                    foreach (var Item in Items)
+                    {
+                        Item.Status = Details[Items.IndexOf(Item)].Status;
+                    }
                 }
             }
             catch (Exception ex)
@@ -66,7 +55,6 @@ namespace AllLive.UWP.ViewModels
             base.Refresh();
             Items.Clear();
             LoadData();
-            LoadStatus();
         }
 
         public void RemoveItem(FavoriteItem item)
