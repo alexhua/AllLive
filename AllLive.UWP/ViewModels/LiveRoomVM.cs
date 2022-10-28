@@ -161,8 +161,7 @@ namespace AllLive.UWP.ViewModels
                 RoomId = roomId;
                 var result = await Site.GetRoomDetail(roomId);
                 detail = result;
-                RoomID = result.RoomID;
-
+                RoomID = result.RoomID.Equals("0") ? roomId.ToString() : result.RoomID;
                 Online = result.Online;
                 Title = result.Title;
                 Name = result.UserName;
@@ -198,13 +197,16 @@ namespace AllLive.UWP.ViewModels
                     // var u = await Site.GetPlayUrls(result, q[0]);
                     //ChangedPlayUrl?.Invoke(this, u[0]);
                 }
-                DatabaseHelper.AddHistory(new Models.HistoryItem()
+                if (Living)
                 {
-                    Photo = Photo,
-                    RoomID = RoomID,
-                    SiteName = Site.Name,
-                    UserName = Name
-                });
+                    DatabaseHelper.AddHistory(new Models.HistoryItem()
+                    {
+                        Photo = Photo,
+                        RoomID = RoomID,
+                        SiteName = Site.Name,
+                        UserName = Name
+                    });
+                }
             }
             catch (Exception ex)
             {

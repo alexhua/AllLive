@@ -143,12 +143,12 @@ namespace AllLive.Core
                 Notice = obj["notice"].ToString(),
                 Status = obj["isLive"].ToInt32() == 1,
                 DanmakuData = obj["rid"].ToString(),
-                Data = await GetPlayArgs(result, obj["rid"].ToString()),
+                Data = GetPlayArgs(result, obj["rid"].ToString()),
                 Url = "https://www.douyu.com/" + roomId
             };
         }
 
-        private async Task<string> GetPlayArgs(string html, string rid)
+        private string GetPlayArgs(string html, string rid)
         {
             //取加密的js
             html = Regex.Match(html, @"(vdwdae325w_64we[\s\S]*function ub98484234[\s\S]*?)function").Groups[1].Value;

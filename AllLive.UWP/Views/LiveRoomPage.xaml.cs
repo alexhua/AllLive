@@ -192,6 +192,18 @@ namespace AllLive.UWP.Views
                     liveRoomVM?.Stop();
                     liveRoomVM.LoadData(pageArgs.Site, liveRoomVM.RoomID);
                     break;
+                case Windows.System.VirtualKey.B:
+                    if (liveRoomVM.IsFavorite)
+                    {
+                        liveRoomVM.RemoveFavoriteCommand.Execute(null);
+                        Utils.ShowMessageToast("收藏已取消");
+                    }
+                    else
+                    {
+                        liveRoomVM.AddFavoriteCommand.Execute(null);
+                        Utils.ShowMessageToast("收藏成功");
+                    }
+                    break;
                 default:
                     break;
             }
@@ -218,7 +230,7 @@ namespace AllLive.UWP.Views
                     ffmpegMSS.Dispose();
                     ffmpegMSS = null;
                 }
-                _config.DefaultBufferTimeUri = TimeSpan.FromSeconds(0);
+                _config.ReadAheadBufferDuration = TimeSpan.FromSeconds(0);
                 ffmpegMSS = await FFmpegMediaSource.CreateFromUriAsync(url, _config);
                 mediaPlayer.AutoPlay = true;
                 mediaPlayer.Source = ffmpegMSS.CreateMediaPlaybackItem();
