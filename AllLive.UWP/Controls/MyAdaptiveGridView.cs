@@ -1,11 +1,7 @@
 ﻿using Microsoft.Toolkit.Uwp.UI.Controls;
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Input;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -57,7 +53,8 @@ namespace AllLive.UWP.Controls
         {
             scrollViewer = GetTemplateChild("ScrollViewer") as ScrollViewer;
             scrollViewer.ViewChanged += ScrollViewer_ViewChanged;
-            this.RegisterPropertyChangedCallback(LoadingProperty, new DependencyPropertyChangedCallback((obj, e) => {
+            this.RegisterPropertyChangedCallback(LoadingProperty, new DependencyPropertyChangedCallback((obj, e) =>
+            {
                 if (!Loading)
                 {
                     if (scrollViewer.ScrollableHeight == 0)

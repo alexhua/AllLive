@@ -1,26 +1,12 @@
-﻿using AllLive.Core.Interface;
-using AllLive.Core.Helper;
-using AllLive.UWP.Helper;
+﻿using AllLive.Core.Helper;
+using AllLive.Core.Interface;
+using AllLive.Core.Models;
 using AllLive.UWP.Models;
 using AllLive.UWP.ViewModels;
 using AllLive.UWP.Views;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text.RegularExpressions;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
-using AllLive.Core.Models;
-using Windows.ApplicationModel.Core;
 
 // https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x804 上介绍了“空白页”项模板
 
@@ -36,7 +22,7 @@ namespace AllLive.UWP
         {
             this.NavigationCacheMode = NavigationCacheMode.Enabled;
             this.InitializeComponent();
-         
+
         }
         protected async override void OnNavigatedTo(NavigationEventArgs e)
         {
@@ -44,7 +30,7 @@ namespace AllLive.UWP
             await Helper.Utils.CheckVersion();
         }
 
-        private  void NavigationView_SelectionChanged(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewSelectionChangedEventArgs args)
+        private void NavigationView_SelectionChanged(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewSelectionChangedEventArgs args)
         {
             var item = args.SelectedItem as Microsoft.UI.Xaml.Controls.NavigationViewItem;
             if (item.Tag.ToString() == "设置" || item.Tag.ToString() == "Settings")
@@ -54,7 +40,7 @@ namespace AllLive.UWP
             frame.Navigate(Type.GetType("AllLive.UWP.Views." + item.Tag));
 
         }
-        
+
         private void searchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
         {
             if (string.IsNullOrEmpty(args.QueryText))

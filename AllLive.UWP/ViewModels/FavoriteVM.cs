@@ -1,10 +1,10 @@
-﻿using AllLive.UWP.Helper;
+﻿using AllLive.Core.Models;
+using AllLive.UWP.Helper;
 using AllLive.UWP.Models;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Collections.ObjectModel;
-using AllLive.Core.Models;
+using System.Threading.Tasks;
 
 namespace AllLive.UWP.ViewModels
 {
@@ -18,7 +18,7 @@ namespace AllLive.UWP.ViewModels
         }
 
         public async void LoadData()
-        {            
+        {
             try
             {
                 Loading = true;

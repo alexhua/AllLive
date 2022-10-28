@@ -1,18 +1,9 @@
 ﻿using AllLive.UWP.Helper;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.ApplicationModel.Core;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 
@@ -64,9 +55,9 @@ namespace AllLive.UWP
             catch (Exception)
             {
 
-                
+
             }
-           
+
         }
 
         private void MessageCenter_ChangeTitleEvent(string title, string logo)
@@ -81,8 +72,8 @@ namespace AllLive.UWP
                 //TODO 新窗口调用此方法会出现线程错误，待处理
                 //throw;
             }
-           
-           
+
+
         }
 
         private void MessageCenter_NavigatePageEvent(Type page, object data)
@@ -94,9 +85,9 @@ namespace AllLive.UWP
             catch (Exception)
             {
 
-               
+
             }
-            
+
         }
 
         private void BtnBack_Click(object sender, RoutedEventArgs e)

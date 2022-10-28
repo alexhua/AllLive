@@ -1,15 +1,11 @@
 ﻿using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AllLive.UWP.ViewModels
 {
-    public class CategoryDetailVM:BaseViewModel
+    public class CategoryDetailVM : BaseViewModel
     {
         public CategoryDetailVM()
         {
@@ -18,7 +14,7 @@ namespace AllLive.UWP.ViewModels
 
         public ObservableCollection<AllLive.Core.Models.LiveRoomItem> Items { get; set; }
 
-        
+
         private ILiveSite _site;
         public ILiveSite Site
         {

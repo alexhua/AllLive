@@ -1,16 +1,12 @@
 ﻿using AllLive.Core.Interface;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AllLive.UWP.ViewModels
 {
     public class MainVM
     {
-       
-        public static List<Site> Sites = new List<Site>() { 
+
+        public static List<Site> Sites = new List<Site>() {
             new Site()
             {
                 Name="哔哩哔哩直播",
@@ -36,7 +32,7 @@ namespace AllLive.UWP.ViewModels
             //    LiveSite=new AllLive.Core.Egame(),
             //},
         };
-        
+
     }
     public class Site
     {

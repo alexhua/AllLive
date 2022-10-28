@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Data;
 
@@ -35,7 +31,7 @@ namespace AllLive.UWP.ViewModels
         public CategoryItemVM(Site site)
         {
             this.site = site;
-           // Items = new ObservableCollection<Core.Models.LiveCategory>();
+            // Items = new ObservableCollection<Core.Models.LiveCategory>();
         }
         //public ObservableCollection<AllLive.Core.Models.LiveCategory> Items { get; set; }
 
@@ -73,7 +69,7 @@ namespace AllLive.UWP.ViewModels
             LoadData();
         }
 
-       
+
 
     }
 }

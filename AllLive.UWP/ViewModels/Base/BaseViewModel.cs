@@ -1,10 +1,6 @@
 ﻿using AllLive.UWP.Helper;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace AllLive.UWP.ViewModels
@@ -16,8 +12,8 @@ namespace AllLive.UWP.ViewModels
             RefreshCommand = new RelayCommand(Refresh);
             LoadMoreCommand = new RelayCommand(LoadMore);
         }
-        public ICommand LoadMoreCommand { get;  set; }
-        public ICommand RefreshCommand { get;  set; }
+        public ICommand LoadMoreCommand { get; set; }
+        public ICommand RefreshCommand { get; set; }
 
         public int Page { get; set; } = 1;
 
@@ -41,7 +37,7 @@ namespace AllLive.UWP.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
-        private bool _empty=false;
+        private bool _empty = false;
         public bool IsEmpty
         {
             get { return _empty; }
@@ -58,7 +54,7 @@ namespace AllLive.UWP.ViewModels
 
         }
 
-        public virtual void HandleError(Exception ex,string message="出现错误，已记录")
+        public virtual void HandleError(Exception ex, string message = "出现错误，已记录")
         {
             if (LogHelper.IsNetworkError(ex))
             {

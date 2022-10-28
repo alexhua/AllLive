@@ -1,11 +1,11 @@
-﻿using AllLive.UWP.Helper;
+﻿using AllLive.Core.Models;
+using AllLive.UWP.Helper;
 using AllLive.UWP.Models;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using System.Windows.Input;
-using AllLive.Core.Models;
 
 namespace AllLive.UWP.ViewModels
 {
@@ -35,7 +35,8 @@ namespace AllLive.UWP.ViewModels
                 IsEmpty = Items.Count == 0;
                 if (!IsEmpty)
                 {
-                    foreach (var Task in QueryStatusTasks) {
+                    foreach (var Task in QueryStatusTasks)
+                    {
                         var Result = await Task;
                         Items[QueryStatusTasks.IndexOf(Task)].Status = Result.Status;
                     }
@@ -49,7 +50,7 @@ namespace AllLive.UWP.ViewModels
             {
                 Loading = false;
             }
-        }       
+        }
 
         public override void Refresh()
         {

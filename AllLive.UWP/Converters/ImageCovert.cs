@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media.Imaging;
 
@@ -16,7 +12,7 @@ namespace AllLive.UWP.Converters
             {
                 return new BitmapImage(new Uri("ms-appx:///Assets/Placeholder/Placeholde.png"));
             }
-           
+
             var url = value.ToString();
             return new BitmapImage(new Uri(url));
         }

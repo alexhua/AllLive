@@ -3,20 +3,11 @@ using AllLive.UWP.ViewModels;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Microsoft.UI.Xaml.Controls;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.Json;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.System;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 
 // https://go.microsoft.com/fwlink/?LinkId=234238 上介绍了“空白页”项模板
@@ -34,7 +25,7 @@ namespace AllLive.UWP.Views
             settingVM = new SettingVM();
             this.InitializeComponent();
             LoadUI();
-           
+
         }
         private void LoadUI()
         {
@@ -107,7 +98,7 @@ namespace AllLive.UWP.Views
                 });
             });
             //弹幕开关
-            var state = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.SHOW, true) ;
+            var state = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.SHOW, true);
             DanmuSettingState.IsOn = state;
             DanmuSettingState.Toggled += new RoutedEventHandler((e, args) =>
             {
@@ -147,7 +138,7 @@ namespace AllLive.UWP.Views
             if (!settingVM.ShieldWords.Contains(LiveDanmuSettingTxtWord.Text))
             {
                 settingVM.ShieldWords.Add(LiveDanmuSettingTxtWord.Text);
-                SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHIELD_WORD,JsonSerializer.Serialize( settingVM.ShieldWords));
+                SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHIELD_WORD, JsonSerializer.Serialize(settingVM.ShieldWords));
             }
 
             LiveDanmuSettingTxtWord.Text = "";
@@ -156,7 +147,7 @@ namespace AllLive.UWP.Views
 
         private async void BtnGithub_Click(object sender, RoutedEventArgs e)
         {
-           await Launcher.LaunchUriAsync(new Uri("https://github.com/xiaoyaocz/AllLive"));
+            await Launcher.LaunchUriAsync(new Uri("https://github.com/xiaoyaocz/AllLive"));
         }
     }
 }

@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AllLive.UWP.ViewModels
 {
-    public  class SearchVM:BaseViewModel
+    public class SearchVM : BaseViewModel
     {
         public SearchVM()
         {
@@ -25,7 +22,7 @@ namespace AllLive.UWP.ViewModels
             get { return items; }
             set { items = value; DoPropertyChanged("Items"); }
         }
-     
+
     }
     public class SearchItemVM : BaseViewModel
     {
@@ -33,10 +30,10 @@ namespace AllLive.UWP.ViewModels
         public SearchItemVM(Site site)
         {
             this.site = site;
-             Items = new ObservableCollection<Core.Models.LiveRoomItem>();
+            Items = new ObservableCollection<Core.Models.LiveRoomItem>();
         }
         public ObservableCollection<AllLive.Core.Models.LiveRoomItem> Items { get; set; }
-        private string _keyword="";
+        private string _keyword = "";
         public async void LoadData(string keyword)
         {
             try

@@ -1,37 +1,31 @@
-﻿using AllLive.UWP.Models;
+﻿using AllLive.Core.Models;
+using AllLive.UWP.Helper;
+using AllLive.UWP.Models;
 using AllLive.UWP.ViewModels;
+using FFmpegInteropX;
+using Microsoft.Toolkit.Uwp.UI;
+using Microsoft.UI.Xaml.Controls;
+using NSDanmaku.Model;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
+using Windows.Graphics.Display;
+using Windows.Graphics.Imaging;
+using Windows.Media.Playback;
+using Windows.Storage;
+using Windows.System.Display;
+using Windows.UI;
+using Windows.UI.Popups;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
-using AllLive.Core.Models;
-using AllLive.UWP.Helper;
-using Microsoft.UI.Xaml.Controls;
-using NSDanmaku.Model;
-using Windows.Media.Playback;
-using Windows.UI.ViewManagement;
-using Windows.UI.Popups;
-using FFmpegInteropX;
-using Windows.System.Display;
-using System.Threading.Tasks;
-using Windows.Storage;
-using Windows.Graphics.Imaging;
 using Windows.UI.Xaml.Media.Imaging;
-using Windows.Graphics.Display;
-using Windows.UI;
-using Windows.ApplicationModel.Core;
-using System.Text.Json;
-using Microsoft.Toolkit.Uwp.UI;
+using Windows.UI.Xaml.Navigation;
 
 // https://go.microsoft.com/fwlink/?LinkId=234238 上介绍了“空白页”项模板
 
@@ -57,7 +51,7 @@ namespace AllLive.UWP.Views
         public LiveRoomPage()
         {
             this.InitializeComponent();
-         
+
             settingVM = new SettingVM();
             liveRoomVM = new LiveRoomVM(settingVM);
             liveRoomVM.Dispatcher = this.Dispatcher;
@@ -252,7 +246,7 @@ namespace AllLive.UWP.Views
                 ffmpegMSS = null;
             }
             liveRoomVM?.Stop();
-         
+
             SetFullScreen(false);
             MiniWidnows(false);
             //取消屏幕常亮
@@ -307,7 +301,7 @@ namespace AllLive.UWP.Views
         //}
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-          
+
             liveRoomVM.AddDanmaku -= LiveRoomVM_AddDanmaku;
             StopPlay();
             Window.Current.CoreWindow.KeyDown -= CoreWindow_KeyDown;
@@ -328,7 +322,7 @@ namespace AllLive.UWP.Views
                 }
                 liveRoomVM.SiteLogo = siteInfo.Logo;
                 liveRoomVM.SiteName = siteInfo.Name;
-              
+
                 var data = pageArgs.Data as LiveRoomItem;
                 MessageCenter.ChangeTitle("", pageArgs.Site);
                 liveRoomVM.LoadData(pageArgs.Site, data.RoomID);
@@ -378,10 +372,10 @@ namespace AllLive.UWP.Views
                 {
                     return;
                 }
-                SettingHelper.SetValue<double>(SettingHelper.RIGHT_DETAIL_WIDTH, args.NewSize.Width+16);
+                SettingHelper.SetValue<double>(SettingHelper.RIGHT_DETAIL_WIDTH, args.NewSize.Width + 16);
             });
             //软解视频
-            cbDecode.SelectedIndex= SettingHelper.GetValue<int>(SettingHelper.DECODE, 0);
+            cbDecode.SelectedIndex = SettingHelper.GetValue<int>(SettingHelper.DECODE, 0);
             switch (cbDecode.SelectedIndex)
             {
                 case 1:
@@ -419,7 +413,7 @@ namespace AllLive.UWP.Views
             var fullWindowMode = SettingHelper.GetValue<bool>(SettingHelper.FULL_WINDOW_MODE, true);
             SetFullWindow(fullWindowMode);
             //弹幕开关
-            var state = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.SHOW,true)?Visibility.Visible:Visibility.Collapsed;
+            var state = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.SHOW, true) ? Visibility.Visible : Visibility.Collapsed;
             DanmuControl.Visibility = state;
             PlaySWDanmu.IsOn = state == Visibility.Visible;
             PlaySWDanmu.Toggled += new RoutedEventHandler((e, args) =>
@@ -528,7 +522,7 @@ namespace AllLive.UWP.Views
         {
             var word = (sender as AppBarButton).DataContext as string;
             settingVM.ShieldWords.Remove(word);
-            SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHIELD_WORD, JsonSerializer.Serialize( settingVM.ShieldWords));
+            SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHIELD_WORD, JsonSerializer.Serialize(settingVM.ShieldWords));
         }
 
         private void LiveDanmuSettingTxtWord_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
@@ -853,7 +847,7 @@ namespace AllLive.UWP.Views
             MessageCenter.HideTitlebar(e);
             if (e)
             {
-              
+
                 PlayBtnFullScreen.Visibility = Visibility.Collapsed;
                 PlayBtnExitFullScreen.Visibility = Visibility.Visible;
                 SetFullWindow(true);
@@ -906,7 +900,7 @@ namespace AllLive.UWP.Views
                 DanmuControl.DanmakuSizeZoom = SettingHelper.GetValue<double>(SettingHelper.LiveDanmaku.FONT_ZOOM, 1);
                 DanmuControl.DanmakuDuration = SettingHelper.GetValue<int>(SettingHelper.LiveDanmaku.SPEED, 10);
                 DanmuControl.ClearAll();
-                DanmuControl.Visibility = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.SHOW, true)?Visibility.Visible:Visibility.Collapsed;
+                DanmuControl.Visibility = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.SHOW, true) ? Visibility.Visible : Visibility.Collapsed;
             }
 
         }

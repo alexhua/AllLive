@@ -1,17 +1,12 @@
 ﻿using AllLive.Core.Interface;
 using AllLive.Core.Models;
+using AllLive.UWP.Helper;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Collections.ObjectModel;
-using Windows.UI.Core;
-using AllLive.UWP.Helper;
+using System.Linq;
 using System.Windows.Input;
-using Windows.UI.ViewManagement;
-using Windows.UI.Xaml;
-using Windows.ApplicationModel.Core;
+using Windows.UI.Core;
 
 namespace AllLive.UWP.ViewModels
 {
@@ -51,7 +46,7 @@ namespace AllLive.UWP.ViewModels
             set { _siteName = value; DoPropertyChanged("SiteName"); }
         }
 
-        private bool _isFavorite=false;
+        private bool _isFavorite = false;
         public bool IsFavorite
         {
             get { return _isFavorite; }
@@ -149,7 +144,7 @@ namespace AllLive.UWP.ViewModels
                 }
                 currentLine = value;
                 DoPropertyChanged("CurrentLine");
-                ChangedPlayUrl?.Invoke(this,value.Url);
+                ChangedPlayUrl?.Invoke(this, value.Url);
             }
 
         }
@@ -167,11 +162,11 @@ namespace AllLive.UWP.ViewModels
                 var result = await Site.GetRoomDetail(roomId);
                 detail = result;
                 RoomID = result.RoomID;
-             
+
                 Online = result.Online;
                 Title = result.Title;
                 Name = result.UserName;
-                MessageCenter.ChangeTitle(Title + " - "+ Name, Site);
+                MessageCenter.ChangeTitle(Title + " - " + Name, Site);
                 if (!string.IsNullOrEmpty(result.UserAvatar))
                 {
                     Photo = result.UserAvatar;
@@ -181,7 +176,7 @@ namespace AllLive.UWP.ViewModels
                 //检查收藏情况
                 FavoriteID = DatabaseHelper.CheckFavorite(RoomID, Site.Name);
                 IsFavorite = FavoriteID != null;
-           
+
                 LiveDanmaku = Site.GetDanmaku();
                 Messages.Add(new LiveMessage()
                 {
@@ -189,7 +184,7 @@ namespace AllLive.UWP.ViewModels
                     UserName = "系统",
                     Message = "开始接收弹幕"
                 });
-             
+
                 LiveDanmaku.NewMessage += LiveDanmaku_NewMessage;
                 LiveDanmaku.OnClose += LiveDanmaku_OnClose;
                 await LiveDanmaku.Start(result.DanmakuData);
@@ -224,17 +219,18 @@ namespace AllLive.UWP.ViewModels
         private void AddFavorite()
         {
             if (Site == null || RoomID == null) return;
-            DatabaseHelper.AddFavorite(new Models.FavoriteItem() { 
-                Photo= Photo,
-                RoomID=RoomID,
-                SiteName=Site.Name,
-                UserName= Name
+            DatabaseHelper.AddFavorite(new Models.FavoriteItem()
+            {
+                Photo = Photo,
+                RoomID = RoomID,
+                SiteName = Site.Name,
+                UserName = Name
             });
             IsFavorite = true;
         }
         private void RemoveFavorite()
         {
-            if (FavoriteID==null)
+            if (FavoriteID == null)
             {
                 return;
             }
@@ -246,7 +242,7 @@ namespace AllLive.UWP.ViewModels
         {
             try
             {
-               var  data = await Site.GetPlayUrls(detail,CurrentQuality);
+                var data = await Site.GetPlayUrls(detail, CurrentQuality);
                 if (data.Count == 0)
                 {
                     Utils.ShowMessageToast("加载播放地址失败");
@@ -255,12 +251,13 @@ namespace AllLive.UWP.ViewModels
                 List<PlayurlLine> ls = new List<PlayurlLine>();
                 for (int i = 0; i < data.Count; i++)
                 {
-                    ls.Add(new PlayurlLine() { 
-                        Name=$"线路{i+1}",
-                        Url= data[i]
+                    ls.Add(new PlayurlLine()
+                    {
+                        Name = $"线路{i + 1}",
+                        Url = data[i]
                     });
                 }
-              
+
                 Lines = ls;
                 CurrentLine = Lines[0];
             }
@@ -268,7 +265,7 @@ namespace AllLive.UWP.ViewModels
             {
                 Utils.ShowMessageToast("加载播放地址失败");
             }
-            
+
 
 
 
@@ -277,7 +274,7 @@ namespace AllLive.UWP.ViewModels
 
         private async void LiveDanmaku_OnClose(object sender, string e)
         {
-            
+
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
                 Messages.Add(new LiveMessage()
@@ -304,7 +301,8 @@ namespace AllLive.UWP.ViewModels
                     {
                         Messages.RemoveAt(0);
                     }
-                    else if (Messages.Count > MessageCleanCount) { 
+                    else if (Messages.Count > MessageCleanCount)
+                    {
                         Messages.Clear();
                     }
                     if (settingVM.ShieldWords != null && settingVM.ShieldWords.Count > 0)

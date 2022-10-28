@@ -1,19 +1,10 @@
 ﻿using Microsoft.Toolkit.Uwp.UI.Animations;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 
 //https://go.microsoft.com/fwlink/?LinkId=234236 上介绍了“用户控件”项模板
 
@@ -61,7 +52,8 @@ namespace AllLive.UWP.Controls
                     VerticalAlignment = VerticalAlignment.Center,
                     Content = new TextBlock() { Text = item.Label }
                 };
-                button.Click += new RoutedEventHandler((sender, e) => {
+                button.Click += new RoutedEventHandler((sender, e) =>
+                {
                     item.Invoked?.Invoke(this, item);
                 });
                 btns.Children.Add(button);
@@ -78,7 +70,7 @@ namespace AllLive.UWP.Controls
         {
             await AnimationBuilder.Create().Offset(to: new Vector2(0, (float)border.ActualHeight), duration: TimeSpan.FromMilliseconds(200)).StartAsync(this);
 
-           // await this.Offset(offsetX: 0, offsetY: (float)border.ActualHeight, duration: 200, delay: 0, easingType: EasingType.Default).StartAsync();
+            // await this.Offset(offsetX: 0, offsetY: (float)border.ActualHeight, duration: 200, delay: 0, easingType: EasingType.Default).StartAsync();
             this.m_Popup.IsOpen = false;
         }
         private async void NotifyPopup_Loaded(object sender, RoutedEventArgs e)

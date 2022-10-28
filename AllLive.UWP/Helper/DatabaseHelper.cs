@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using AllLive.UWP.Models;
 using Microsoft.Data.Sqlite;
-using Windows.Storage;
+using System;
+using System.Collections.Generic;
 using System.IO;
-using AllLive.UWP.Models;
+using System.Threading.Tasks;
+using Windows.Storage;
 
 namespace AllLive.UWP.Helper
 {
@@ -44,7 +42,7 @@ watch_time DATETIME);
 
         public static void AddFavorite(FavoriteItem item)
         {
-            if (CheckFavorite(item.RoomID, item.SiteName)!=null) { return; }
+            if (CheckFavorite(item.RoomID, item.SiteName) != null) { return; }
             SqliteCommand command = new SqliteCommand();
             command.Connection = db;
             command.CommandText = "INSERT INTO Favorite VALUES (NULL,@user_name,@site_name, @photo, @room_id);";
@@ -62,7 +60,7 @@ watch_time DATETIME);
             command.Parameters.AddWithValue("@site_name", siteName);
             command.Parameters.AddWithValue("@room_id", roomId);
             var result = command.ExecuteScalar();
-            if (result==null)
+            if (result == null)
             {
                 return null;
             }
@@ -81,12 +79,12 @@ watch_time DATETIME);
         {
             List<FavoriteItem> favoriteItems = new List<FavoriteItem>();
             SqliteCommand command = new SqliteCommand("SELECT * FROM Favorite", db);
-            var reader =await command.ExecuteReaderAsync();
+            var reader = await command.ExecuteReaderAsync();
             while (reader.Read())
             {
                 favoriteItems.Add(new FavoriteItem()
                 {
-                    ID= reader.GetInt32(0),
+                    ID = reader.GetInt32(0),
                     RoomID = reader.GetString(4),
                     Photo = reader.GetString(3),
                     SiteName = reader.GetString(2),
@@ -103,17 +101,17 @@ watch_time DATETIME);
             command.Connection = db;
             var hisId = CheckHistory(item.RoomID, item.SiteName);
             if (hisId != null)
-            {  
+            {
                 //更新时间
                 command.CommandText = "UPDATE History SET watch_time=@time WHERE room_id=@room_id and site_name=@site_name";
                 command.Parameters.AddWithValue("@site_name", item.SiteName);
                 command.Parameters.AddWithValue("@room_id", item.RoomID);
                 command.Parameters.AddWithValue("@time", DateTime.Now);
                 command.ExecuteReader();
-              
+
                 return;
             }
-          
+
             command.CommandText = "INSERT INTO History VALUES (NULL,@user_name,@site_name, @photo, @room_id,@time);";
             command.Parameters.AddWithValue("@user_name", item.UserName);
             command.Parameters.AddWithValue("@site_name", item.SiteName);
@@ -143,7 +141,7 @@ watch_time DATETIME);
             command.CommandText = "DELETE FROM History WHERE id=@id";
             command.Parameters.AddWithValue("@id", id);
             command.ExecuteNonQuery();
-          
+
         }
         public static void DeleteHistory()
         {
@@ -157,17 +155,17 @@ watch_time DATETIME);
         {
             List<HistoryItem> favoriteItems = new List<HistoryItem>();
             SqliteCommand command = new SqliteCommand("SELECT * FROM History ORDER BY watch_time DESC", db);
-            var reader =await command.ExecuteReaderAsync();
+            var reader = await command.ExecuteReaderAsync();
             while (reader.Read())
             {
                 favoriteItems.Add(new HistoryItem()
                 {
-                    ID= reader.GetInt32(0),
+                    ID = reader.GetInt32(0),
                     RoomID = reader.GetString(4),
                     Photo = reader.GetString(3),
                     SiteName = reader.GetString(2),
                     UserName = reader.GetString(1),
-                    WatchTime= reader.GetDateTime(5)
+                    WatchTime = reader.GetDateTime(5)
                 });
             }
             return favoriteItems;

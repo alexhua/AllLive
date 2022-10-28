@@ -4,10 +4,7 @@ using AllLive.UWP.Models;
 using AllLive.UWP.ViewModels;
 using AllLive.UWP.Views;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Windows.ApplicationModel.Core;
 using Windows.UI.Core;
 using Windows.UI.ViewManagement;
@@ -18,19 +15,19 @@ namespace AllLive.UWP.Helper
 {
     public static class MessageCenter
     {
-        public delegate void NavigatePageHandler(Type page,object data);
+        public delegate void NavigatePageHandler(Type page, object data);
         public static event NavigatePageHandler NavigatePageEvent;
         public delegate void ChangeTitleHandler(string title, string logo);
         public static event ChangeTitleHandler ChangeTitleEvent;
         public static event EventHandler<bool> HideTitlebarEvent;
-        public async static void OpenLiveRoom(ILiveSite liveSite,LiveRoomItem item)
+        public async static void OpenLiveRoom(ILiveSite liveSite, LiveRoomItem item)
         {
             var arg = new PageArgs()
             {
                 Site = liveSite,
                 Data = item
             };
-            if (SettingHelper.GetValue(SettingHelper.NEW_WINDOW_LIVEROOM,false))
+            if (SettingHelper.GetValue(SettingHelper.NEW_WINDOW_LIVEROOM, false))
             {
                 CoreApplicationView newView = CoreApplication.CreateNewView();
                 int newViewId = 0;
@@ -54,7 +51,7 @@ namespace AllLive.UWP.Helper
                 NavigatePage(typeof(LiveRoomPage), arg);
                 //(Window.Current.Content as Frame).Navigate(typeof(LiveRoomPage), arg);
             }
-           
+
         }
 
         public static void NavigatePage(Type page, object data)
@@ -62,7 +59,7 @@ namespace AllLive.UWP.Helper
             NavigatePageEvent?.Invoke(page, data);
         }
 
-        public static void ChangeTitle(string title, ILiveSite site=null)
+        public static void ChangeTitle(string title, ILiveSite site = null)
         {
             var logo = "ms-appx:///Assets/Square44x44Logo.png";
             if (site != null)
@@ -73,7 +70,7 @@ namespace AllLive.UWP.Helper
                     logo = siteInfo.Logo;
                 }
             }
-           
+
             ChangeTitleEvent?.Invoke(title, logo);
         }
         public static void HideTitlebar(bool show)
@@ -82,5 +79,5 @@ namespace AllLive.UWP.Helper
         }
     }
     class BlankPage : Page { }
-    
+
 }

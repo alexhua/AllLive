@@ -2,9 +2,6 @@
 using AllLive.UWP.Controls;
 using Microsoft.Toolkit.Uwp.Helpers;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Windows.UI.Popups;
@@ -16,7 +13,7 @@ namespace AllLive.UWP.Helper
 {
     public static class Utils
     {
-        public  static void ShowMessageToast(string message, int seconds = 2)
+        public static void ShowMessageToast(string message, int seconds = 2)
         {
             MessageToast ms = new MessageToast(message, TimeSpan.FromSeconds(seconds));
             ms.Show();
@@ -85,7 +82,7 @@ namespace AllLive.UWP.Helper
             }
         }
 
-     
+
         public static async Task FadeOutAsync(this UIElement element, double duration = 250, EasingFunctionBase easingFunction = null)
         {
             if (element.Opacity > 0.0)
@@ -98,10 +95,10 @@ namespace AllLive.UWP.Helper
         {
             try
             {
-                var url = $"https://cdn.jsdelivr.net/gh/xiaoyaocz/AllLive@master/AllLive.UWP/version.json?ts{new Random().Next(0,99999) }";
+                var url = $"https://cdn.jsdelivr.net/gh/xiaoyaocz/AllLive@master/AllLive.UWP/version.json?ts{new Random().Next(0, 99999)}";
                 var result = await HttpUtil.GetString(url);
                 var ver = JsonSerializer.Deserialize<NewVersion>(result);
-                var num = $"{ SystemInformation.Instance.ApplicationVersion.Major }{ SystemInformation.Instance.ApplicationVersion.Minor.ToString("00")}{ SystemInformation.Instance.ApplicationVersion.Build.ToString("00")}";
+                var num = $"{SystemInformation.Instance.ApplicationVersion.Major}{SystemInformation.Instance.ApplicationVersion.Minor.ToString("00")}{SystemInformation.Instance.ApplicationVersion.Build.ToString("00")}";
                 var v = int.Parse(num);
                 if (ver.versionCode > v)
                 {

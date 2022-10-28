@@ -1,24 +1,14 @@
 ﻿using AllLive.UWP.Helper;
 using FFmpegInteropX;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
-using Windows.ApplicationModel.Core;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 
 namespace AllLive.UWP
@@ -36,7 +26,7 @@ namespace AllLive.UWP
         {
 
             this.InitializeComponent();
-           
+
             App.Current.UnhandledException += App_UnhandledException;
             FFmpegInteropLogging.SetLogLevel(LogLevel.Info);
             FFmpegInteropLogging.SetLogProvider(this);
@@ -89,7 +79,7 @@ namespace AllLive.UWP
             //初始化数据库
             await DatabaseHelper.InitializeDatabase();
 
-            
+
             Frame rootFrame = Window.Current.Content as Frame;
 
             // 不要在窗口已包含内容时重复应用程序初始化，
@@ -101,7 +91,7 @@ namespace AllLive.UWP
 
                 rootFrame.NavigationFailed += OnNavigationFailed;
                 rootFrame.Navigated += RootFrame_Navigated;
-             
+
                 if (e.PreviousExecutionState == ApplicationExecutionState.Terminated)
                 {
                     //TODO: 从之前挂起的应用程序加载状态
@@ -128,13 +118,13 @@ namespace AllLive.UWP
         }
 
 
-      
+
         public static void SetTitleBar()
         {
             UISettings uISettings = new UISettings();
             var color = TitltBarButtonColor(uISettings);
             ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
-            
+
             titleBar.ButtonBackgroundColor = Colors.Transparent;
             titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
             titleBar.ButtonForegroundColor = color;
@@ -142,7 +132,7 @@ namespace AllLive.UWP
             titleBar.BackgroundColor = Colors.Transparent;
             uISettings.ColorValuesChanged += new TypedEventHandler<UISettings, object>((setting, args) =>
             {
-              
+
                 titleBar.ButtonForegroundColor = TitltBarButtonColor(uISettings);
                 titleBar.ButtonBackgroundColor = Colors.Transparent;
                 titleBar.BackgroundColor = Colors.Transparent;
@@ -157,11 +147,11 @@ namespace AllLive.UWP
             if (settingTheme != 0)
             {
                 color = settingTheme == 1 ? Colors.Black : Colors.White;
-              
+
             }
             return color;
         }
-      
+
 
         private void RootFrame_Navigated(object sender, NavigationEventArgs e)
         {
