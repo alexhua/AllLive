@@ -22,21 +22,21 @@ namespace AllLive.UWP.ViewModels
             try
             {
                 Loading = true;
-                var QueryStatusTasks = new List<Task<LiveRoomDetail>>();
+                var DetailTasks = new List<Task<LiveRoomDetail>>();
                 foreach (var item in await DatabaseHelper.GetFavorites())
                 {
                     Items.Add(item);
                     var Site = MainVM.Sites.Find(x => x.Name == item.SiteName);
-                    QueryStatusTasks.Add(Site.LiveSite.GetRoomDetail(item.RoomID));
+                    DetailTasks.Add(Site.LiveSite.GetRoomDetail(item.RoomID));
                 }
                 IsEmpty = Items.Count == 0;
 
                 if (!IsEmpty)
                 {
-                    var Details = await Task.WhenAll<LiveRoomDetail>(QueryStatusTasks);
-                    foreach (var Item in Items)
+                    for (var i = 0; i < Items.Count; i++)
                     {
-                        Item.Status = Details[Items.IndexOf(Item)].Status;
+                        var Result = await DetailTasks[i];
+                        Items[i].Status = Result != null && Result.Status;
                     }
                 }
             }

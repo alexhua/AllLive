@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net.Http;
+using System.Net;
 
 namespace AllLive.Core.Helper
 {
@@ -10,7 +11,10 @@ namespace AllLive.Core.Helper
     {
         public static async Task<string> GetString(string url,IDictionary<string,string> headers=null)
         {
-            using (HttpClient httpClient=new HttpClient())
+            using (HttpClient httpClient=new HttpClient(new HttpClientHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip
+            }))
             {
                 if (headers != null)
                 {
@@ -26,7 +30,10 @@ namespace AllLive.Core.Helper
         }
         public static async Task<string> GetUtf8String(string url, IDictionary<string, string> headers = null)
         {
-            using (HttpClient httpClient = new HttpClient())
+            using (HttpClient httpClient = new HttpClient(new HttpClientHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip
+            }))
             {
                 if (headers != null)
                 {
