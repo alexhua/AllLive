@@ -20,6 +20,7 @@ namespace AllLive.UWP.Views
         {
             favoriteVM = new FavoriteVM();
             this.InitializeComponent();
+            Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
         }
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
@@ -41,6 +42,20 @@ namespace AllLive.UWP.Views
         {
             var item = (sender as MenuFlyoutItem).DataContext as FavoriteItem;
             favoriteVM.RemoveItem(item);
+        }
+
+        private void CoreWindow_KeyDown(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.KeyEventArgs args)
+        {
+            args.Handled = true;
+            switch (args.VirtualKey)
+            {
+                case Windows.System.VirtualKey.R:
+                    if (!favoriteVM.Loading && favoriteVM.Items.Count != 0)
+                    {
+                        favoriteVM.Refresh();
+                    }
+                    break;
+            }
         }
     }
 }

@@ -27,7 +27,7 @@ namespace AllLive.UWP
         protected async override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
-            await Helper.Utils.CheckVersion();
+            //await Helper.Utils.CheckVersion();
         }
 
         private void NavigationView_SelectionChanged(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewSelectionChangedEventArgs args)

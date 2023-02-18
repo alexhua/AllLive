@@ -874,7 +874,10 @@ namespace AllLive.UWP.Views
                 PlayBtnFullScreen.Visibility = Visibility.Visible;
                 PlayBtnExitFullScreen.Visibility = Visibility.Collapsed;
                 var fullWindowMode = SettingHelper.GetValue<bool>(SettingHelper.FULL_WINDOW_MODE, true);
-                SetFullWindow(fullWindowMode);
+                if (isMini)
+                    MiniWidnows(true);
+                else 
+                    SetFullWindow(fullWindowMode);
 
                 //退出全屏
                 if (view.IsFullScreenMode)
