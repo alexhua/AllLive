@@ -11,10 +11,11 @@ namespace AllLive.Core.Helper
     {
         public static async Task<string> GetString(string url,IDictionary<string,string> headers=null)
         {
-            using (HttpClient httpClient=new HttpClient(new HttpClientHandler
+            HttpClientHandler httpClientHandler = new HttpClientHandler
             {
-                AutomaticDecompression = DecompressionMethods.GZip
-            }))
+                AutomaticDecompression = DecompressionMethods.GZip| DecompressionMethods.Deflate
+            };
+            using (HttpClient httpClient=new HttpClient(httpClientHandler))
             {
                 if (headers != null)
                 {
@@ -30,10 +31,11 @@ namespace AllLive.Core.Helper
         }
         public static async Task<string> GetUtf8String(string url, IDictionary<string, string> headers = null)
         {
-            using (HttpClient httpClient = new HttpClient(new HttpClientHandler
+            HttpClientHandler httpClientHandler = new HttpClientHandler
             {
-                AutomaticDecompression = DecompressionMethods.GZip
-            }))
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+            };
+            using (HttpClient httpClient = new HttpClient(httpClientHandler))
             {
                 if (headers != null)
                 {

@@ -78,7 +78,8 @@ namespace AllLive.UWP
         {
             //初始化数据库
             await DatabaseHelper.InitializeDatabase();
-
+            //初始化弹幕DPI
+            NSDanmaku.Controls.Danmaku.InitDanmakuDpi();
 
             Frame rootFrame = Window.Current.Content as Frame;
 

@@ -149,5 +149,12 @@ namespace AllLive.UWP.Views
         {
             await Launcher.LaunchUriAsync(new Uri("https://github.com/xiaoyaocz/AllLive"));
         }
+
+        private async void BtnLog_Click(object sender, RoutedEventArgs e)
+        {
+            Windows.Storage.StorageFolder storageFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
+            var logFolder = await storageFolder.CreateFolderAsync("log", Windows.Storage.CreationCollisionOption.OpenIfExists);
+            await Launcher.LaunchFolderAsync(logFolder);
+        }
     }
 }

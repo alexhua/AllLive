@@ -54,7 +54,7 @@ namespace AllLive.Core
             {
                 subs.Add(new LiveSubCategory()
                 {
-                    Pic = $"https://huyaimg.msstatic.com/cdnimage/game/{ item["gid"].ToString()}-MS.jpg",
+                    Pic = $"https://huyaimg.msstatic.com/cdnimage/game/{item["gid"]}-MS.jpg",
                     ID = item["gid"].ToString(),
                     ParentID = id,
                     Name = item["gameFullName"].ToString(),
@@ -78,12 +78,17 @@ namespace AllLive.Core
                 {
                     cover += "?x-oss-process=style/w338_h190&";
                 }
+                var title = item["roomName"]?.ToString();
+                if (string.IsNullOrEmpty(title))
+                {
+                    title = item["introduction"]?.ToString() ?? "";
+                }
                 categoryResult.Rooms.Add(new LiveRoomItem()
                 {
                     Cover = cover,
                     Online = item["totalCount"].ToInt32(),
                     RoomID = item["profileRoom"].ToString(),
-                    Title = item["roomName"].ToString(),
+                    Title = title,
                     UserName = item["nick"].ToString(),
                 });
             }
@@ -107,12 +112,17 @@ namespace AllLive.Core
                 {
                     cover += "?x-oss-process=style/w338_h190&";
                 }
+                var title = item["roomName"]?.ToString();
+                if (string.IsNullOrEmpty(title))
+                {
+                    title = item["introduction"]?.ToString() ?? "";
+                }
                 categoryResult.Rooms.Add(new LiveRoomItem()
                 {
                     Cover = cover,
                     Online = item["totalCount"].ToInt32(),
                     RoomID = item["profileRoom"].ToString(),
-                    Title = item["roomName"].ToString(),
+                    Title = title,
                     UserName = item["nick"].ToString(),
                 });
             }
@@ -126,12 +136,17 @@ namespace AllLive.Core
             var result = await HttpUtil.GetString($"https://m.huya.com/{roomId}", headers);
             var jsonStr = Regex.Match(result, @"window\.HNF_GLOBAL_INIT.=.\{(.*?)\}.</script>", RegexOptions.Singleline).Groups[1].Value;
             var jsonObj = JsonNode.Parse($"{{{jsonStr}}}");
+            var title = jsonObj["roomInfo"]["tLiveInfo"]["sRoomName"].ToString();
+            if (string.IsNullOrEmpty(title))
+            {
+                title = jsonObj["roomInfo"]["tLiveInfo"]["sIntroduction"].ToString();
+            }
             return new LiveRoomDetail()
             {
                 Cover = jsonObj["roomInfo"]["tLiveInfo"]["sScreenshot"].ToString(),
                 Online = jsonObj["roomInfo"]["tLiveInfo"]["lTotalCount"].ToInt32(),
                 RoomID = jsonObj["roomInfo"]["tLiveInfo"]["lProfileRoom"].ToString(),
-                Title = jsonObj["roomInfo"]["tLiveInfo"]["sRoomName"].ToString(),
+                Title = title,
                 UserName = jsonObj["roomInfo"]["tProfileInfo"]["sNick"].ToString(),
                 UserAvatar = jsonObj["roomInfo"]["tProfileInfo"]["sAvatar180"].ToString(),
                 Introduction = jsonObj["roomInfo"]["tLiveInfo"]["sIntroduction"].ToString(),
@@ -176,7 +191,7 @@ namespace AllLive.Core
             return searchResult;
         }
 
-        private string generateWsSecret(string StreamName) {
+        private string GenerateWsSecret(string StreamName) {
             const string fm = "DWq8BcJ3h6DJt6TY";
             const string ctype = "tars_mobile";
             const string t = "103";
@@ -189,7 +204,7 @@ namespace AllLive.Core
             string wsSecret = Utils.ToMD5($"{fm}_{uid}_{StreamName}_{s}_{wsTime}");
             return $"wsSecret={wsSecret}&wsTime={wsTime}&seqid={seqid}&uid={uid}&uuid={uuid}";
         }
-        private string pickupUrlParams(params string[] antiCodes)
+        private string PickupUrlParams(params string[] antiCodes)
         {
             string result = "ver=1";
             for (int i = 3; i < antiCodes.Length; i++)
@@ -213,26 +228,26 @@ namespace AllLive.Core
                 {
                     ((List<string>)quality.Data).Add(
                         $"{streamInfo["sFlvUrl"]}/{streamInfo["sStreamName"]}.{streamInfo["sFlvUrlSuffix"]}?" +
-                        $"{generateWsSecret(streamInfo["sStreamName"].ToString())}&ratio={bitRateInfo["iBitRate"]}&" +
-                        pickupUrlParams(streamInfo["sFlvAntiCode"].ToString().Split('&'))
+                        $"{GenerateWsSecret(streamInfo["sStreamName"].ToString())}&ratio={bitRateInfo["iBitRate"]}&" +
+                        PickupUrlParams(streamInfo["sFlvAntiCode"].ToString().Split('&'))
                     );
                 }
                 qualities.Add(quality);
-                /* Hls */
-                var qualityHls = new LivePlayQuality()
-                {
-                    Quality = bitRateInfo["sDisplayName"].ToString() + "-HLS",
-                    Data = new List<string>()
-                };
-                foreach (JsonNode streamInfo in liveStreamInfo["vStreamInfo"]["value"].AsArray())
-                {
-                    ((List<string>)qualityHls.Data).Add(
-                        $"{streamInfo["sHlsUrl"]}/{streamInfo["sStreamName"]}.{streamInfo["sHlsUrlSuffix"]}?" +
-                        $"{generateWsSecret(streamInfo["sStreamName"].ToString())}&ratio={bitRateInfo["iBitRate"]}&" +
-                        pickupUrlParams(streamInfo["sHlsAntiCode"].ToString().Split('&'))
-                    );
-                }
-                qualities.Add(qualityHls);
+                ///* Hls */
+                //var qualityHls = new LivePlayQuality()
+                //{
+                //    Quality = bitRateInfo["sDisplayName"].ToString() + "-HLS",
+                //    Data = new List<string>()
+                //};
+                //foreach (JsonNode streamInfo in liveStreamInfo["vStreamInfo"]["value"].AsArray())
+                //{
+                //    ((List<string>)qualityHls.Data).Add(
+                //        $"{streamInfo["sHlsUrl"]}/{streamInfo["sStreamName"]}.{streamInfo["sHlsUrlSuffix"]}?" +
+                //        $"{generateWsSecret(streamInfo["sStreamName"].ToString())}&ratio={bitRateInfo["iBitRate"]}&" +
+                //        pickupUrlParams(streamInfo["sHlsAntiCode"].ToString().Split('&'))
+                //    );
+                //}
+                //qualities.Add(qualityHls);
                 if (qualities.Count == 4) break;
             }
             return Task.FromResult(qualities);

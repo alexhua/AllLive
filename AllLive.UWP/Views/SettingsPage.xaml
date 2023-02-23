@@ -166,6 +166,7 @@
                         <TextBlock FontSize="12" Foreground="Gray">版本: <Run x:Name="version"/></TextBlock>
                     </StackPanel>
                     <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                        <Button x:Name="BtnLog" Margin="8 0" Click="BtnLog_Click">运行日志</Button>
                         <Button x:Name="BtnGithub" Click="BtnGithub_Click">项目主页</Button>
                     </StackPanel>
                 </Grid>

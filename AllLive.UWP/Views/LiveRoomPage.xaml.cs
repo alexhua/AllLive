@@ -81,13 +81,17 @@ namespace AllLive.UWP.Views
             LoadSetting();
         }
 
-        private void LiveRoomVM_AddDanmaku(object sender, string e)
+        private void LiveRoomVM_AddDanmaku(object sender, LiveMessage e)
         {
+
             if (DanmuControl.Visibility == Visibility.Visible)
             {
-
-                DanmuControl.AddLiveDanmu(e, false, Colors.White);
+                var color = DanmuSettingColourful.IsOn ?
+                    Color.FromArgb(e.Color.A, e.Color.R, e.Color.G, e.Color.B) :
+                    Colors.White;
+                DanmuControl.AddLiveDanmu(e.Message, false, color);
             }
+
         }
 
         private async void CoreWindow_KeyDown(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.KeyEventArgs args)
@@ -527,6 +531,13 @@ namespace AllLive.UWP.Views
             DanmuSettingArea.ValueChanged += new RangeBaseValueChangedEventHandler((e, args) =>
             {
                 SettingHelper.SetValue<double>(SettingHelper.LiveDanmaku.AREA, DanmuSettingArea.Value);
+            });
+
+            //彩色弹幕
+            DanmuSettingColourful.IsOn = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.COLOURFUL, true);
+            DanmuSettingColourful.Toggled += new RoutedEventHandler((e, args) =>
+            {
+                SettingHelper.SetValue<bool>(SettingHelper.LiveDanmaku.COLOURFUL, DanmuSettingColourful.IsOn);
             });
         }
 
