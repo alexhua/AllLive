@@ -120,9 +120,8 @@ namespace AllLive.Core
                 { "cookie", Cookie }
             };
             var result = await HttpUtil.GetString($"https://api.bilibili.com/x/web-interface/search/type?context=&search_type=live&cover_type=user_cover&page={page}&order=&keyword={Uri.EscapeDataString(keyword)}&category_id=&__refresh__=true&_extra=&highlight=0&single_column=0", headers);
-            var obj = JsonNode.Parse(result);
-           
-            foreach (var item in obj["data"]["result"]["live_room"].AsArray())
+            var liveRooms = JsonNode.Parse(result)["data"]["result"]["live_room"] ?? new JsonArray();
+            foreach (var item in liveRooms.AsArray())
             {
                 searchResult.Rooms.Add(new LiveRoomItem()
                 {

@@ -216,6 +216,7 @@ namespace AllLive.Core
         public Task<List<LivePlayQuality>> GetPlayQuality(LiveRoomDetail roomDetail)
         {
             JsonNode liveStreamInfo = roomDetail.Data as JsonNode;
+            var streamRatio = liveStreamInfo["mStreamRatio"]["value"];
             List<LivePlayQuality> qualities = new List<LivePlayQuality>();
             foreach (JsonNode bitRateInfo in liveStreamInfo["vBitRateInfo"]["value"].AsArray())
             {   /* Flv */
@@ -226,7 +227,11 @@ namespace AllLive.Core
                 };
                 foreach (JsonNode streamInfo in liveStreamInfo["vStreamInfo"]["value"].AsArray())
                 {
-                    ((List<string>)quality.Data).Add(
+                    var cdnType = streamInfo["sCdnType"].ToString();
+                    int index = 0;
+                    if (streamRatio[cdnType].ToInt32() < 0)  //可能为无效线路
+                        index = ((List<string>)quality.Data).Count;
+                    ((List<string>)quality.Data).Insert(index,
                         $"{streamInfo["sFlvUrl"]}/{streamInfo["sStreamName"]}.{streamInfo["sFlvUrlSuffix"]}?" +
                         $"{GenerateWsSecret(streamInfo["sStreamName"].ToString())}&ratio={bitRateInfo["iBitRate"]}&" +
                         PickupUrlParams(streamInfo["sFlvAntiCode"].ToString().Split('&'))

@@ -234,6 +234,7 @@ namespace AllLive.UWP.ViewModels
                 SiteName = Site.Name,
                 UserName = Name
             });
+            FavoriteID = DatabaseHelper.CheckFavorite(RoomID, Site.Name);
             IsFavorite = true;
         }
         private void RemoveFavorite()
@@ -244,6 +245,7 @@ namespace AllLive.UWP.ViewModels
             }
             DatabaseHelper.DeleteFavorite(FavoriteID.Value);
             IsFavorite = false;
+            FavoriteID = null;
         }
 
         public async void LoadPlayUrl()

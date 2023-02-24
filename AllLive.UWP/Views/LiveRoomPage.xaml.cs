@@ -57,7 +57,12 @@ namespace AllLive.UWP.Views
             liveRoomVM.Dispatcher = this.Dispatcher;
             dispRequest = new DisplayRequest();
             _config = new MediaSourceConfig();
-            //_config.FFmpegOptions.Add("rtsp_flags", "prefer_tcp");
+            _config.ReadAheadBufferDuration = TimeSpan.FromSeconds(0);
+            _config.FFmpegOptions.Add("rw_timeout", 8 * 1000000);
+            _config.FFmpegOptions.Add("reconnect_at_eof", 1);
+            _config.FFmpegOptions.Add("reconnect_streamed", 1);
+            _config.FFmpegOptions.Add("reconnect_on_network_error", 1);
+            _config.FFmpegOptions.Add("reconnect_delay_max", 5);
             Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
             liveRoomVM.ChangedPlayUrl += LiveRoomVM_ChangedPlayUrl;
             liveRoomVM.AddDanmaku += LiveRoomVM_AddDanmaku;
@@ -72,7 +77,7 @@ namespace AllLive.UWP.Views
             mediaPlayer.PlaybackSession.BufferingProgressChanged += PlaybackSession_BufferingProgressChanged;
             mediaPlayer.PlaybackSession.BufferingEnded += PlaybackSession_BufferingEnded;
             mediaPlayer.MediaOpened += MediaPlayer_MediaOpened;
-            mediaPlayer.MediaEnded += MediaPlayer_MediaEnded; ;
+            mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
             mediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
 
             timer_focus.Start();
@@ -234,7 +239,6 @@ namespace AllLive.UWP.Views
                     ffmpegMSS.Dispose();
                     ffmpegMSS = null;
                 }
-                _config.ReadAheadBufferDuration = TimeSpan.FromSeconds(0);
                 ffmpegMSS = await FFmpegMediaSource.CreateFromUriAsync(url, _config);
                 mediaPlayer.AutoPlay = true;
                 mediaPlayer.Source = ffmpegMSS.CreateMediaPlaybackItem();
@@ -243,6 +247,7 @@ namespace AllLive.UWP.Views
             catch (Exception ex)
             {
                 Utils.ShowMessageToast("播放失败" + ex.Message);
+                PlayerLoadText.Text = ex.Message;
             }
 
         }
@@ -333,7 +338,7 @@ namespace AllLive.UWP.Views
                 var siteInfo = MainVM.Sites.FirstOrDefault(x => x.LiveSite.Equals(pageArgs.Site));
                 if (siteInfo.Name == "哔哩哔哩直播")
                 {
-                    _config.FFmpegOptions.Add("user_agent", "Mozilla/5.0 BiliDroid/1.12.0 (bbcallen@gmail.com)");
+                    _config.FFmpegOptions.Add("user_agent", "Mozilla/5.0 BiliDroid/6.73.1 (bbcallen@gmail.com)");
                     _config.FFmpegOptions.Add("referer", "https://live.bilibili.com/");
                 }
                 liveRoomVM.SiteLogo = siteInfo.Logo;
@@ -648,6 +653,7 @@ namespace AllLive.UWP.Views
                     case MediaPlaybackState.Playing:
                         PlayBtnPlay.Visibility = Visibility.Collapsed;
                         PlayBtnPause.Visibility = Visibility.Visible;
+                        liveRoomVM.Living = true;
                         break;
                     case MediaPlaybackState.Paused:
                         PlayBtnPlay.Visibility = Visibility.Visible;
