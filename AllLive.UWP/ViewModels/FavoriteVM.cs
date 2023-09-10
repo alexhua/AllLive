@@ -35,8 +35,23 @@ namespace AllLive.UWP.ViewModels
                 {
                     for (var i = 0; i < Items.Count; i++)
                     {
-                        var Result = await DetailTasks[i];
-                        Items[i].Status = Result != null && Result.Status;
+                        var item = Items[i];
+                        try
+                        {
+                            var Result = await DetailTasks[i];
+                            item.Status = Result != null && Result.Status;
+
+                            if (item.Status && (!item.UserName.Equals(Result.UserName) || !item.Photo.Equals(Result.UserAvatar)))
+                            {
+                                item.UserName = Result.UserName;
+                                item.Photo = Result.UserAvatar;
+                                DatabaseHelper.UpdateFavorite(item);
+                            }
+                        }
+                        catch
+                        {
+                            Utils.ShowMessageToast($"{item.UserName}的房间: {item.RoomID}，获取信息异常。");
+                        }
                     }
                 }
             }

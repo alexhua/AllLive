@@ -38,8 +38,15 @@ namespace AllLive.UWP.ViewModels
                 {
                     for (var i = 0; i < Items.Count; i++)
                     {
-                        var Result = await DetailTasks[i];
-                        Items[i].Status = Result != null && Result.Status;
+                        try
+                        {
+                            var Result = await DetailTasks[i];
+                            Items[i].Status = Result != null && Result.Status;
+                        }
+                        catch
+                        {
+                            Utils.ShowMessageToast($"{Items[i].UserName}的房间: {Items[i].RoomID}，获取信息异常。");
+                        }
                     }
                 }
             }
