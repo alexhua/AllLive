@@ -125,12 +125,12 @@ namespace AllLive.Core
         }
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
         {
-            var result = await HttpUtil.GetString($"https://www.douyu.com/{roomId}");
-
             Dictionary<string, string> headers = new Dictionary<string, string>();
-            headers.Add("user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1 Edg/91.0.4472.69");
+            headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0000.000 Safari/537.36");
+            var result = await HttpUtil.GetString($"https://www.douyu.com/{roomId}", headers);
+            headers["user-agent"] = "Mozilla/5.0 (iPhone; CPU iPhone OS 15_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1";
             var result_json = await HttpUtil.GetString($"https://m.douyu.com/{roomId}", headers);
-            var obj = JsonNode.Parse($"{{{result_json.MatchText(@"\$ROOM.=.{(.*?)}")}}}");
+            var obj = JsonNode.Parse($"{{{result_json.MatchText(@"roomInfo.:{.*roomInfo.:{(.*?)}")}}}");
             return new LiveRoomDetail()
             {
                 Cover = obj["roomSrc"].ToString(),
@@ -143,7 +143,7 @@ namespace AllLive.Core
                 Notice = obj["notice"].ToString(),
                 Status = obj["isLive"].ToInt32() == 1,
                 DanmakuData = obj["rid"].ToString(),
-                Data = GetPlayArgs(result, obj["rid"].ToString()),
+                Data = GetPlayArgs(result, obj["rid"].ToString()), 
                 Url = "https://www.douyu.com/" + roomId
             };
         }

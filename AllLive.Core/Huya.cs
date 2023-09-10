@@ -132,7 +132,7 @@ namespace AllLive.Core
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
         {
             Dictionary<string, string> headers = new Dictionary<string, string>();
-            headers.Add("user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1");
+            headers.Add("user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 15_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1");
             var result = await HttpUtil.GetString($"https://m.huya.com/{roomId}", headers);
             var jsonStr = Regex.Match(result, @"window\.HNF_GLOBAL_INIT.=.\{(.*?)\}.</script>", RegexOptions.Singleline).Groups[1].Value;
             var jsonObj = JsonNode.Parse($"{{{jsonStr}}}");

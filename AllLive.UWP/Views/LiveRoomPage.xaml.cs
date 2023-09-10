@@ -58,11 +58,11 @@ namespace AllLive.UWP.Views
             dispRequest = new DisplayRequest();
             _config = new MediaSourceConfig();
             _config.ReadAheadBufferDuration = TimeSpan.FromSeconds(0);
-            _config.FFmpegOptions.Add("rw_timeout", 8 * 1000000);
+            _config.FFmpegOptions.Add("rw_timeout", 5 * 1000000);
             _config.FFmpegOptions.Add("reconnect_at_eof", 1);
             _config.FFmpegOptions.Add("reconnect_streamed", 1);
-            _config.FFmpegOptions.Add("reconnect_on_network_error", 1);
-            _config.FFmpegOptions.Add("reconnect_delay_max", 5);
+            //_config.FFmpegOptions.Add("reconnect_on_network_error", 1);
+            //_config.FFmpegOptions.Add("reconnect_delay_max", 3);
             Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
             liveRoomVM.ChangedPlayUrl += LiveRoomVM_ChangedPlayUrl;
             liveRoomVM.AddDanmaku += LiveRoomVM_AddDanmaku;
@@ -577,6 +577,16 @@ namespace AllLive.UWP.Views
             {
                 liveRoomVM.Living = false;
                 player.SetMediaPlayer(null);
+                if (dispRequest != null)
+                {
+                    try
+                    {
+                        dispRequest.RequestRelease();
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
             });
         }
 
