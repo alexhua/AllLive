@@ -40,12 +40,15 @@ namespace AllLive.UWP.ViewModels
                         {
                             var Result = await DetailTasks[i];
                             item.Status = Result != null && Result.Status;
-
-                            if (item.Status && (!item.UserName.Equals(Result.UserName) || !item.Photo.Equals(Result.UserAvatar)))
+                            if (item.Status)
                             {
-                                item.UserName = Result.UserName;
-                                item.Photo = Result.UserAvatar;
-                                DatabaseHelper.UpdateFavorite(item);
+                                item.Cover = Result.Cover;
+                                if (!item.UserName.Equals(Result.UserName) || !item.Photo.Equals(Result.UserAvatar))
+                                {
+                                    item.UserName = Result.UserName;
+                                    item.Photo = Result.UserAvatar;
+                                    DatabaseHelper.UpdateFavorite(item);
+                                }
                             }
                         }
                         catch

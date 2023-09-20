@@ -5,6 +5,8 @@
     xmlns:local="using:AllLive.UWP.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:models="using:AllLive.UWP.Models" xmlns:controls="using:AllLive.UWP.Controls" xmlns:Windows10version1809="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 7)"
+    xmlns:toolkit="using:Microsoft.Toolkit.Uwp.UI.Controls" 
+    xmlns:media="using:Microsoft.Toolkit.Uwp.UI.Media"
     mc:Ignorable="d">
 
     <Grid>
@@ -30,7 +32,7 @@
             </controls:MyAdaptiveGridView.ItemContainerStyle>
             <controls:MyAdaptiveGridView.ItemTemplate>
                 <DataTemplate x:DataType="models:FavoriteItem">
-                    <Grid >
+                    <Grid CornerRadius="6" Margin="0 4">
                         <Grid.ContextFlyout>
                             <MenuFlyout>
                                 <MenuFlyoutItem Click="MenuFlyoutItem_Click" Icon="Delete" Text="移除"></MenuFlyoutItem>
@@ -45,10 +47,21 @@
                             <TextBlock Text="{x:Bind Path=UserName}"></TextBlock>
                             <TextBlock Text="{x:Bind Path=SiteName}" Margin="0 4 0 0" FontSize="12" Foreground="Gray"></TextBlock>
                         </StackPanel>
-                        <SymbolIcon Grid.Column="2" Height="36" Width="36" Foreground="#3855BD"
-                               VerticalAlignment="Center" HorizontalAlignment="Right" 
+                        <toolkit:ImageEx Grid.Column="2" x:Name="ImageExControl" IsCacheEnabled="True" Stretch="UniformToFill" Width="Auto" Margin="3 0 0 0"
+                                Source="{Binding Path=Cover}" HorizontalAlignment="Right" CornerRadius="10" Opacity="0.36">
+                        </toolkit:ImageEx>
+                        <Grid Grid.Column="3" HorizontalAlignment="Right">
+                            <SymbolIcon Height="36" Width="36" Foreground="#3855BD"
+                               VerticalAlignment="Center"  
                                Symbol="Play" Visibility="{x:Bind Path=Status, Mode=OneWay}">
-                        </SymbolIcon>
+                            </SymbolIcon>
+                            <Grid.Background>
+                                <media:BackdropBlurBrush Amount="6" />
+                            </Grid.Background>
+                        </Grid>
+                        <!--<Grid.Background>
+                            <ImageBrush ImageSource="{x:Bind Path=Cover}" Stretch="UniformToFill" Opacity="0.4"/>                            
+                        </Grid.Background>-->
                     </Grid>
                 </DataTemplate>
             </controls:MyAdaptiveGridView.ItemTemplate>
