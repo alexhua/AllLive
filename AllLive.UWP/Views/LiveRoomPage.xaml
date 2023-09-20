@@ -33,8 +33,9 @@
             <Button x:Name="BtnFoucs" Width="0" Height="0" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="-8 -8 0 0" Background="Transparent" BorderThickness="0"></Button>
             <Grid Background="Black" RequestedTheme="Dark"
               ui:UIElementExtensions.ClipToBounds="True"
-              PointerMoved="Grid_PointerMoved"   
-              PointerEntered="Grid_PointerEntered" 
+              PointerMoved="Grid_PointerMoved"
+              PointerWheelChanged="Grid_PointerWheelChanged"
+              PointerEntered="Grid_PointerEntered"
               PointerExited="Grid_PointerExited"
               ManipulationMode="TranslateY,TranslateRailsY"
               ManipulationCompleted="Grid_ManipulationCompleted"

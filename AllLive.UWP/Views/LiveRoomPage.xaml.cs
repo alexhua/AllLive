@@ -770,6 +770,15 @@ namespace AllLive.UWP.Views
 
         }
 
+        private async void Grid_PointerWheelChanged(Object sender, PointerRoutedEventArgs args)
+        {
+            SliderVolume.Value += args.GetCurrentPoint(null).Properties.MouseWheelDelta / 2400f;
+            TxtToolTip.Text = "音量 : " + Math.Round(mediaPlayer.Volume * 100);
+            ToolTip.Visibility = Visibility.Visible;
+            await Task.Delay(2000);
+            ToolTip.Visibility = Visibility.Collapsed;
+        }
+
         bool ManipulatingBrightness = false;
         private void Grid_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
@@ -903,7 +912,7 @@ namespace AllLive.UWP.Views
                 var fullWindowMode = SettingHelper.GetValue<bool>(SettingHelper.FULL_WINDOW_MODE, true);
                 if (isMini)
                     MiniWidnows(true);
-                else 
+                else
                     SetFullWindow(fullWindowMode);
 
                 //退出全屏
