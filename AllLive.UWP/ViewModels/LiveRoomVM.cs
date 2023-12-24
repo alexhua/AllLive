@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
+using WebSocketSharp;
 using Windows.UI.Core;
 
 namespace AllLive.UWP.ViewModels
@@ -261,9 +262,14 @@ namespace AllLive.UWP.ViewModels
                 List<PlayurlLine> ls = new List<PlayurlLine>();
                 for (int i = 0; i < data.Count; i++)
                 {
+                    var name = $"线路{i + 1}";
+                    if (CurrentQuality.LineNames != null && !string.IsNullOrWhiteSpace(CurrentQuality.LineNames[i]))
+                    {
+                        name = CurrentQuality.LineNames[i];
+                    }
                     ls.Add(new PlayurlLine()
                     {
-                        Name = $"线路{i + 1}",
+                        Name = name,
                         Url = data[i]
                     });
                 }

@@ -17,5 +17,9 @@ namespace AllLive.Core.Models
         /// 清晰度信息
         /// </summary>
         public object Data { get; set; }
+        /// <summary>
+        /// 线路名称列表
+        /// </summary>
+        public List<string> LineNames { get; set; }
     }
 }

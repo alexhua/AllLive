@@ -31,30 +31,27 @@ namespace AllLive.UWP.ViewModels
                 }
                 IsEmpty = Items.Count == 0;
 
-                if (!IsEmpty)
+                for (var i = 0; i < Items.Count; i++)
                 {
-                    for (var i = 0; i < Items.Count; i++)
+                    var item = Items[i];
+                    try
                     {
-                        var item = Items[i];
-                        try
+                        var Result = await DetailTasks[i];
+                        item.Status = Result != null && Result.Status;
+                        if (item.Status)
                         {
-                            var Result = await DetailTasks[i];
-                            item.Status = Result != null && Result.Status;
-                            if (item.Status)
+                            item.Cover = Result.Cover;
+                            if (!item.UserName.Equals(Result.UserName) || !item.Photo.Equals(Result.UserAvatar))
                             {
-                                item.Cover = Result.Cover;
-                                if (!item.UserName.Equals(Result.UserName) || !item.Photo.Equals(Result.UserAvatar))
-                                {
-                                    item.UserName = Result.UserName;
-                                    item.Photo = Result.UserAvatar;
-                                    DatabaseHelper.UpdateFavorite(item);
-                                }
+                                item.UserName = Result.UserName;
+                                item.Photo = Result.UserAvatar;
+                                DatabaseHelper.UpdateFavorite(item);
                             }
                         }
-                        catch
-                        {
-                            Utils.ShowMessageToast($"{item.UserName}的房间: {item.RoomID}，获取信息异常。");
-                        }
+                    }
+                    catch
+                    {
+                        Utils.ShowMessageToast($"{item.UserName}的房间: {item.RoomID}，获取信息异常。");
                     }
                 }
             }

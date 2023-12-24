@@ -210,8 +210,10 @@ namespace AllLive.Core
             var result = await HttpUtil.PostString($"https://www.douyu.com/lapi/live/getH5Play/{ roomDetail.RoomID}", data);
             var obj = JsonNode.Parse(result);
             var cdns = new List<string>();
+            var lineNames = new List<string>();
             foreach (var item in obj["data"]["cdnsWithName"].AsArray())
             {
+                lineNames.Add(item["name"].ToString());
                 cdns.Add(item["cdn"].ToString());
             }
             foreach (var item in obj["data"]["multirates"].AsArray())
@@ -220,6 +222,7 @@ namespace AllLive.Core
                 {
                     Quality = item["name"].ToString(),
                     Data = new KeyValuePair<int, List<string>>(item["rate"].ToInt32(), cdns),
+                    LineNames = lineNames
                 });
             }
             return qualities;

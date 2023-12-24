@@ -57,12 +57,12 @@ namespace AllLive.UWP.Views
             liveRoomVM.Dispatcher = this.Dispatcher;
             dispRequest = new DisplayRequest();
             _config = new MediaSourceConfig();
-            _config.ReadAheadBufferDuration = TimeSpan.FromSeconds(0);
-            _config.FFmpegOptions.Add("rw_timeout", 5 * 1000000);
+            _config.ReadAheadBufferDuration = TimeSpan.FromSeconds(3);
+            _config.FFmpegOptions.Add("rw_timeout", 8 * 1000000);
             _config.FFmpegOptions.Add("reconnect_at_eof", 1);
             _config.FFmpegOptions.Add("reconnect_streamed", 1);
-            //_config.FFmpegOptions.Add("reconnect_on_network_error", 1);
-            //_config.FFmpegOptions.Add("reconnect_delay_max", 3);
+            _config.FFmpegOptions.Add("reconnect_on_network_error", 1);
+            _config.FFmpegOptions.Add("reconnect_delay_max", 5);
             Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
             liveRoomVM.ChangedPlayUrl += LiveRoomVM_ChangedPlayUrl;
             liveRoomVM.AddDanmaku += LiveRoomVM_AddDanmaku;
@@ -246,8 +246,25 @@ namespace AllLive.UWP.Views
             }
             catch (Exception ex)
             {
-                Utils.ShowMessageToast("播放失败" + ex.Message);
-                PlayerLoadText.Text = ex.Message;
+                var message = ex.Message.Split("\r\n")[0];
+                var lineIndex = liveRoomVM.Lines.IndexOf(liveRoomVM.CurrentLine);
+
+                if (lineIndex != -1 && lineIndex < liveRoomVM.Lines.Count - 1)
+                {
+                    var name = $"线路{lineIndex + 1}";
+                    if (liveRoomVM.CurrentQuality.LineNames != null && !string.IsNullOrWhiteSpace(liveRoomVM.CurrentQuality.LineNames[lineIndex]))
+                    {
+                        name = liveRoomVM.CurrentQuality.LineNames[lineIndex];
+                    }
+                    Utils.ShowMessageToast($"{name}：" + message);
+                    PlayerLoadText.Text = message;
+                    liveRoomVM.CurrentLine = liveRoomVM.Lines[lineIndex + 1];
+                }
+                else
+                {
+                    Utils.ShowMessageToast("播放失败：" + message);
+                    PlayerLoadText.Text = message;
+                }
             }
 
         }
@@ -340,6 +357,12 @@ namespace AllLive.UWP.Views
                 {
                     _config.FFmpegOptions.Add("user_agent", "Mozilla/5.0 BiliDroid/6.73.1 (bbcallen@gmail.com)");
                     _config.FFmpegOptions.Add("referer", "https://live.bilibili.com/");
+                } else if (siteInfo.Name == "虎牙直播")
+                {
+                    _config.FFmpegOptions.Add("user_agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1");
+                } else
+                {
+                    _config.FFmpegOptions.Add("user_agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
                 }
                 liveRoomVM.SiteLogo = siteInfo.Logo;
                 liveRoomVM.SiteName = siteInfo.Name;

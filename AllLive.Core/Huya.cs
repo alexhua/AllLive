@@ -168,7 +168,7 @@ namespace AllLive.Core
                 Rooms = new List<LiveRoomItem>(),
 
             };
-            var result = await HttpUtil.GetUtf8String($"https://search.cdn.huya.com/?m=Search&do=getSearchContent&q={ Uri.EscapeDataString(keyword)}&uid=0&v=4&typ=-5&livestate=0&rows=20&start={(page - 1) * 20}");
+            var result = await HttpUtil.GetUtf8String($"https://search.cdn.huya.com/?m=Search&do=getSearchContent&q={Uri.EscapeDataString(keyword)}&uid=0&v=4&typ=-5&livestate=0&rows=20&start={(page - 1) * 20}");
             var obj = JsonNode.Parse(result);
 
             foreach (var item in obj["response"]["3"]["docs"].AsArray())
@@ -191,7 +191,8 @@ namespace AllLive.Core
             return searchResult;
         }
 
-        private string GenerateWsSecret(string StreamName) {
+        private string GenerateWsSecret(string StreamName)
+        {
             const string fm = "DWq8BcJ3h6DJt6TY";
             const string ctype = "tars_mobile";
             const string t = "103";
@@ -223,15 +224,16 @@ namespace AllLive.Core
                 var quality = new LivePlayQuality()
                 {
                     Quality = bitRateInfo["sDisplayName"].ToString(),
-                    Data = new List<string>()
+                    Data = new List<string>(),
+                    LineNames = new List<string>()
                 };
                 foreach (JsonNode streamInfo in liveStreamInfo["vStreamInfo"]["value"].AsArray())
                 {
                     var cdnType = streamInfo["sCdnType"].ToString();
-                    int index = 0;
-                    if (streamRatio[cdnType].ToInt32() < 0)  //可能为无效线路
-                        index = ((List<string>)quality.Data).Count;
-                    ((List<string>)quality.Data).Insert(index,
+                    if (streamRatio[cdnType].ToInt32() < 0) continue; //可能为无效线路
+                    var lineName = streamInfo["iLineIndex"].ToInt32() == 0 ? "" : $"线路{streamInfo["iLineIndex"].ToInt32()}";
+                    quality.LineNames.Add(lineName);
+                    ((List<string>)quality.Data).Add(
                         $"{streamInfo["sFlvUrl"]}/{streamInfo["sStreamName"]}.{streamInfo["sFlvUrlSuffix"]}?" +
                         $"{GenerateWsSecret(streamInfo["sStreamName"].ToString())}&ratio={bitRateInfo["iBitRate"]}&" +
                         PickupUrlParams(streamInfo["sFlvAntiCode"].ToString().Split('&'))
@@ -257,7 +259,7 @@ namespace AllLive.Core
             }
             return Task.FromResult(qualities);
         }
-        
+
         public Task<List<string>> GetPlayUrls(LiveRoomDetail roomDetail, LivePlayQuality qn)
         {
             return Task.FromResult(qn.Data as List<string>);
