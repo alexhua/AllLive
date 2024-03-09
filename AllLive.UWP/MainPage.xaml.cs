@@ -17,17 +17,35 @@ namespace AllLive.UWP
     /// </summary>
     public sealed partial class MainPage : Page
     {
+        private DateTime mNavigatedFromTime;
 
         public MainPage()
         {
             this.NavigationCacheMode = NavigationCacheMode.Enabled;
             this.InitializeComponent();
-
+            mNavigatedFromTime = DateTime.Now;
         }
+
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
             //await Helper.Utils.CheckVersion();
+
+            TimeSpan timeSinceLoad = DateTime.Now - mNavigatedFromTime;
+            if (timeSinceLoad > TimeSpan.FromSeconds(300)) // 300秒为 TTL
+            {
+                // 超过 TTL，重新加载收藏页面直播状态
+                var item = navigationView.SelectedItem as Microsoft.UI.Xaml.Controls.NavigationViewItem;
+                if (item != null && "FavoritePage".Equals(item.Tag))
+                {
+                    frame.Navigate(Type.GetType("AllLive.UWP.Views." + item.Tag));
+                }
+            }
+        }
+
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            mNavigatedFromTime = DateTime.Now;
         }
 
         private void NavigationView_SelectionChanged(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewSelectionChangedEventArgs args)

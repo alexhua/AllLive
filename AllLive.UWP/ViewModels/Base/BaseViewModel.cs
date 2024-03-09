@@ -24,6 +24,13 @@ namespace AllLive.UWP.ViewModels
             set { _loading = value; DoPropertyChanged("Loading"); }
         }
 
+        private double _loadProgress;
+        public double LoadProgress
+        {
+            get { return _loadProgress; }
+            set { _loadProgress = value; DoPropertyChanged(nameof(LoadProgress)); }
+        }
+
         private bool _canLoadMore;
         public bool CanLoadMore
         {

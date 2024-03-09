@@ -10,6 +10,11 @@
     mc:Ignorable="d">
 
     <Grid>
+        <ProgressBar Minimum="0" Maximum="1" Value="{x:Bind Path=favoriteVM.LoadProgress,Mode=OneWay}" Visibility="{x:Bind Path=favoriteVM.Loading,Mode=OneWay}"  VerticalAlignment="Top">
+            <ProgressBar.RenderTransform>
+                <ScaleTransform ScaleY="0.5" />
+            </ProgressBar.RenderTransform>
+        </ProgressBar>
         <controls:MyAdaptiveGridView ItemsSource="{x:Bind Path=favoriteVM.Items}"
                                      ItemHeight="72" 
                                      CanLoadMore="False"
@@ -45,7 +50,7 @@
                         <PersonPicture Width="56" BorderThickness="0" ProfilePicture="{x:Bind Path=Photo}" Height="48" Background="Blue"></PersonPicture>
                         <StackPanel Grid.Column="1" Margin="8 0 0 0" VerticalAlignment="Center">
                             <TextBlock Text="{x:Bind Path=UserName}"></TextBlock>
-                            <TextBlock Text="{x:Bind Path=SiteName}" Margin="0 4 0 0" FontSize="12" Foreground="Gray"></TextBlock>
+                            <TextBlock Text="{x:Bind Path=Title}" Margin="0 4 0 0" FontSize="12" Foreground="Gray"></TextBlock>
                         </StackPanel>
                         <toolkit:ImageEx Grid.Column="2" x:Name="ImageExControl" IsCacheEnabled="True" Stretch="UniformToFill" Width="Auto" Margin="3 0 0 0"
                                 Source="{Binding Path=Cover}" HorizontalAlignment="Right" CornerRadius="10" Opacity="0.36">

@@ -9,6 +9,11 @@
     >
 
     <Grid>
+        <ProgressBar Minimum="0" Maximum ="1" Value="{x:Bind Path=historyVM.LoadProgress,Mode=OneWay}" Visibility="{x:Bind Path=historyVM.Loading,Mode=OneWay}"  VerticalAlignment="Top">
+            <ProgressBar.RenderTransform>
+                <ScaleTransform ScaleY="0.5" />
+            </ProgressBar.RenderTransform>
+        </ProgressBar>
         <controls:MyAdaptiveGridView ItemsSource="{x:Bind Path=historyVM.Items}"
                                      ItemHeight="72" 
                                      CanLoadMore="False"

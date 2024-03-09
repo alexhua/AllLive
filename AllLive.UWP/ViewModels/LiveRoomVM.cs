@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
-using WebSocketSharp;
 using Windows.UI.Core;
 
 namespace AllLive.UWP.ViewModels
@@ -166,7 +165,7 @@ namespace AllLive.UWP.ViewModels
                 Online = result.Online;
                 Title = result.Title;
                 Name = result.UserName;
-                MessageCenter.ChangeTitle(Title + " - " + Name, Site);
+                MessageCenter.ChangeTitle(Name + (string.IsNullOrEmpty(Title) ? "" : $" - {Title}"), Site);
                 if (!string.IsNullOrEmpty(result.UserAvatar))
                 {
                     Photo = result.UserAvatar;
@@ -196,7 +195,7 @@ namespace AllLive.UWP.ViewModels
                         //HDR无法播放
                         qualities = qualities.Where(x => !x.Quality.Contains("HDR")).ToList();
                     }
-                    Qualities=qualities;
+                    Qualities = qualities;
                     if (Qualities != null && Qualities.Count > 0)
                     {
                         CurrentQuality = Qualities[0];

@@ -15,6 +15,7 @@ namespace AllLive.UWP.ViewModels
         {
             Items = new ObservableCollection<HistoryItem>();
             CleanCommand = new RelayCommand(Clean);
+            LoadProgress = 0;
         }
         public ICommand CleanCommand { get; set; }
 
@@ -22,31 +23,36 @@ namespace AllLive.UWP.ViewModels
 
         public async void LoadData()
         {
+            Loading = true;
+            LoadProgress = 0;
+            var DetailTasks = new List<Task<LiveRoomDetail>>();
             try
             {
-                Loading = true;
-                var DetailTasks = new List<Task<LiveRoomDetail>>();
                 foreach (var item in await DatabaseHelper.GetHistory())
                 {
                     Items.Add(item);
                     var Site = MainVM.Sites.Find(x => x.Name == item.SiteName);
-                    DetailTasks.Add(Site.LiveSite.GetRoomDetail(item.RoomID));
+                    var detailTask = Site.LiveSite.GetRoomDetail(item.RoomID);
+                    DetailTasks.Add(detailTask);
                 }
                 IsEmpty = Items.Count == 0;
-
-                if (!IsEmpty)
+                for (var i = 0; i < DetailTasks.Count; i++)
                 {
-                    for (var i = 0; i < Items.Count; i++)
+                    try
                     {
-                        try
+                        var roomDetail = await DetailTasks[i];
+                        if (roomDetail != null && roomDetail.Status)
                         {
-                            var Result = await DetailTasks[i];
-                            Items[i].Status = Result != null && Result.Status;
+                            Items[i].Status = roomDetail.Status;
                         }
-                        catch
-                        {
-                            Utils.ShowMessageToast($"{Items[i].UserName}的房间: {Items[i].RoomID}，获取信息异常。");
-                        }
+                    }
+                    catch
+                    {
+                        Utils.ShowMessageToast($"{Items[i].UserName}的房间: {Items[i].RoomID}，获取信息异常。");
+                    }
+                    finally
+                    {
+                        LoadProgress += 1d / DetailTasks.Count;
                     }
                 }
             }
@@ -56,6 +62,7 @@ namespace AllLive.UWP.ViewModels
             }
             finally
             {
+                DetailTasks.Clear();
                 Loading = false;
             }
         }
@@ -100,8 +107,6 @@ namespace AllLive.UWP.ViewModels
             {
                 HandleError(ex);
             }
-
         }
-
     }
 }
