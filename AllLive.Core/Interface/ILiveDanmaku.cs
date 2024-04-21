@@ -9,8 +9,8 @@ namespace AllLive.Core.Interface
         /// <summary>
         /// 新信息事件
         /// </summary>
-        event EventHandler<LiveMessage> NewMessage;
-        event EventHandler<string> OnClose;
+        event EventHandler<LiveMessage> NewMessageEvent;
+        event EventHandler<string> CloseEvent;
         /// <summary>
         /// 发送心跳包间隔时间/毫秒
         /// </summary>

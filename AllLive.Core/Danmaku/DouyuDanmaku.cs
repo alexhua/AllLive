@@ -4,11 +4,11 @@ using AllLive.Core.Models;
 using System;
 using System.Drawing;
 using System.IO;
+using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Timers;
-using WebSocketSharp;
 /*
 * 斗鱼弹幕实现
 * 参考项目：
@@ -22,62 +22,58 @@ namespace AllLive.Core.Danmaku
 {
     public class DouyuDanmaku : ILiveDanmaku
     {
+        private readonly Uri ServerUri;
+        private readonly Timer HeartBeatTimer;
+        private readonly ClientWebSocket WsClient;
+
+        private string roomId;
+
         public int HeartbeatTime => 45 * 1000;
 
-        public event EventHandler<LiveMessage> NewMessage;
-        public event EventHandler<string> OnClose;
-        private readonly string ServerUrl = "wss://danmuproxy.douyu.com:8506";
-        Timer timer;
-        WebSocket ws;
-        string roomId;
+        public event EventHandler<LiveMessage> NewMessageEvent;
+        public event EventHandler<string> CloseEvent;
+
         public DouyuDanmaku()
         {
-            ws = new WebSocket(ServerUrl);
-            ws.OnOpen += Ws_OnOpen;
-            ws.OnError += Ws_OnError;
-            ws.OnMessage += Ws_OnMessage;
-            ws.OnClose += Ws_OnClose;
-            timer = new Timer(HeartbeatTime);
-            timer.Elapsed += Timer_Elapsed;
-
+            ServerUri = new Uri("wss://danmuproxy.douyu.com:8506");
+            WsClient = new ClientWebSocket();
+            HeartBeatTimer = new Timer(HeartbeatTime);
+            HeartBeatTimer.Elapsed += Timer_Elapsed;
         }
-        private async void Ws_OnOpen(object sender, EventArgs e)
-        {
-            await Task.Run(() =>
-            {
-                //发送进房信息
-                ws.Send(SerializeDouyu($"type@=loginreq/roomid@={roomId}/"));
-                ws.Send(SerializeDouyu($"type@=joingroup/rid@={roomId}/gid@=-9999/"));
-            });
-            timer.Start();
 
-        }
-        private void Ws_OnMessage(object sender, MessageEventArgs e)
+        private async void ReceiveMessage()
         {
-            try
+            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
+            while (WsClient.State == WebSocketState.Open)
             {
-                string result = DeserializeDouyu(e.RawData);
-                if (result.Length != 0)
+                try
                 {
-                    var json = SttToJObject(result);
-                    var type = json["type"]?.ToString();
-                    //斗鱼好像不会返回人气值
-                    //有些直播间存在阴间弹幕，不知道什么情况
-                    if (type == "chatmsg")
+                    WebSocketReceiveResult result = await WsClient.ReceiveAsync(buffer, default);
+                    string message = DeserializeDouyu(buffer.Array);
+                    if (message.Length != 0)
                     {
-                        NewMessage?.Invoke(this, new LiveMessage()
+                        var json = SttToJObject(message);
+                        var type = json["type"]?.ToString();
+                        //斗鱼好像不会返回人气值
+                        //有些直播间存在阴间弹幕，不知道什么情况
+                        if (type == "chatmsg")
                         {
-                            UserName = json["nn"].ToString(),
-                            Message = json["txt"].ToString(),
-                            Color = GetColor(json["col"].ToInt32())
-                        });
+                            NewMessageEvent?.Invoke(this, new LiveMessage()
+                            {
+                                UserName = json["nn"].ToString(),
+                                Message = json["txt"].ToString(),
+                                Color = GetColor(json["col"].ToInt32())
+                            });
+                        }
                     }
-
                 }
-
+                catch (Exception)
+                {
+                }
             }
-            catch (Exception)
+            if (WsClient.State != WebSocketState.Open)
             {
+                OnClose();
             }
         }
 
@@ -102,18 +98,6 @@ namespace AllLive.Core.Danmaku
             }
         }
 
-        private void Ws_OnClose(object sender, CloseEventArgs e)
-        {
-            OnClose?.Invoke(this, e.Reason);
-        }
-
-        private void Ws_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
-        {
-            OnClose?.Invoke(this, e.Message);
-        }
-
-
-
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
             Heartbeat();
@@ -121,30 +105,49 @@ namespace AllLive.Core.Danmaku
 
         public async void Heartbeat()
         {
-            await Task.Run(() =>
+            if (WsClient.State == WebSocketState.Open)
             {
-                ws.Send(SerializeDouyu($"type@=mrkl/"));
-            });
+                await WsClient.SendAsync(SerializeDouyu($"type@=mrkl/"), WebSocketMessageType.Binary, true, default);
+            }
         }
 
         public async Task Start(object args)
         {
             this.roomId = args.ToString();
-            await Task.Run(() =>
+            await WsClient.ConnectAsync(ServerUri, default);
+            if (WsClient.State == WebSocketState.Open)
             {
-                ws.Connect();
-            });
+                //发送进房信息
+                await WsClient.SendAsync(SerializeDouyu($"type@=loginreq/roomid@={roomId}/"), WebSocketMessageType.Binary, true, default);
+                await WsClient.SendAsync(SerializeDouyu($"type@=joingroup/rid@={roomId}/gid@=-9999/"), WebSocketMessageType.Binary, true, default);
+                HeartBeatTimer.Start();
+                ReceiveMessage();
+            }
+            else
+            {
+                OnClose();
+            }
         }
 
         public async Task Stop()
         {
-            await Task.Run(() =>
+            if (WsClient.State == WebSocketState.Connecting)
             {
-                ws.Close();
-            });
+                WsClient.Abort();
+            }
+            if (WsClient.State == WebSocketState.Open)
+            {
+                await WsClient.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client closed", default);
+            }
+            HeartBeatTimer.Stop();
         }
 
-        private byte[] SerializeDouyu(string body)
+        private void OnClose()
+        {
+            CloseEvent?.Invoke(this, WsClient.State.ToString());
+        }
+
+        private ArraySegment<byte> SerializeDouyu(string body)
         {
             const short ClientSendToServer = 689;
             const byte Encrypted = 0;
@@ -163,18 +166,13 @@ namespace AllLive.Core.Danmaku
                     writer.Write(bodyBuffer);
                     writer.Write((byte)0);
                     writer.Flush();
-
-                    return ms.ToArray();
+                    return new ArraySegment<byte>(ms.ToArray());
                 }
             }
-
-
-
         }
 
         private string DeserializeDouyu(byte[] bytes)
         {
-
             try
             {
                 using (var ms = new MemoryStream(bytes, 0, bytes.Length, writable: false))
@@ -192,15 +190,13 @@ namespace AllLive.Core.Danmaku
                     byte zero = reader.ReadByte();
                     return Encoding.UTF8.GetString(_bytes);
                 }
-
             }
             catch (Exception)
             {
-
                 return "";
             }
-
         }
+
         //辣鸡STT
         private JsonNode SttToJObject(string str)
         {

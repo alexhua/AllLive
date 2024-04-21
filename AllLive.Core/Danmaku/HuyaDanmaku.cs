@@ -3,10 +3,10 @@ using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
 using System.Drawing;
+using System.Net.WebSockets;
 using System.Threading.Tasks;
 using System.Timers;
 using Tup.Tars;
-using WebSocketSharp;
 /*
 * 虎牙弹幕实现
 * 参考项目：
@@ -29,97 +29,83 @@ namespace AllLive.Core.Danmaku
     }
     public class HuyaDanmaku : ILiveDanmaku
     {
-        public int HeartbeatTime => 60 * 1000;
+        private readonly Uri ServerUri;
+        private readonly Timer HeartBeatTimer;
+        private readonly ClientWebSocket WsClient;
+        private readonly byte[] HeartBeatData;
 
-        public event EventHandler<LiveMessage> NewMessage;
-        public event EventHandler<string> OnClose;
-        readonly byte[] heartBeatData;
-        private readonly string ServerUrl = "wss://cdnws.api.huya.com";
-        Timer timer;
-        WebSocket ws;
-        HuyaDanmakuArgs args;
+        private HuyaDanmakuArgs DanmakuArgs;
+
+        public int HeartbeatTime => 60 * 1000;
+        public event EventHandler<LiveMessage> NewMessageEvent;
+        public event EventHandler<string> CloseEvent;
+
         public HuyaDanmaku()
         {
-            heartBeatData = Convert.FromBase64String("ABQdAAwsNgBM");
-            ws = new WebSocket(ServerUrl);
-            ws.OnOpen += Ws_OnOpen;
-            ws.OnError += Ws_OnError;
-            ws.OnMessage += Ws_OnMessage;
-            ws.OnClose += Ws_OnClose;
-            timer = new Timer(HeartbeatTime);
-            timer.Elapsed += Timer_Elapsed;
-
+            HeartBeatData = Convert.FromBase64String("ABQdAAwsNgBM");
+            ServerUri = new Uri("wss://cdnws.api.huya.com");
+            WsClient = new ClientWebSocket();
+            HeartBeatTimer = new Timer(HeartbeatTime);
+            HeartBeatTimer.Elapsed += Timer_Elapsed;
         }
-        private async void Ws_OnOpen(object sender, EventArgs e)
-        {
-            await Task.Run(() =>
-            {
-                //发送进房信息
-                ws.Send(JoinData(args.Ayyuid, args.TopSid, args.SubSid));
 
-            });
-            timer.Start();
-
-        }
-        private void Ws_OnMessage(object sender, MessageEventArgs e)
+        private async void ReceiveMessage()
         {
-            try
+            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
+            while (WsClient.State == WebSocketState.Open)
             {
-                var stream = new TarsInputStream(e.RawData);
-                var type = stream.Read(0, 0, false);
-                if (type == 7)
+                try
                 {
-                    stream = new TarsInputStream(stream.Read(new byte[0], 1, false));
-                    HYPushMessage wSPushMessage = new HYPushMessage();
-                    wSPushMessage.ReadFrom(stream);
-                    if (wSPushMessage.Uri == 1400)
+                    WebSocketReceiveResult result = await WsClient.ReceiveAsync(buffer, default);
+                    var stream = new TarsInputStream(buffer.Array);
+                    var type = stream.Read(0, 0, false);
+                    if (type == 7)
                     {
-
-                        HYMessage messageNotice = new HYMessage();
-                        messageNotice.ReadFrom(new TarsInputStream(wSPushMessage.Msg));
-                        var uname = messageNotice.UserInfo.NickName;
-                        var content = messageNotice.Content;
-                        var color = messageNotice.BulletFormat.FontColor;
-                        NewMessage?.Invoke(this, new LiveMessage()
+                        stream = new TarsInputStream(stream.Read(new byte[0], 1, false));
+                        HYPushMessage wSPushMessage = new HYPushMessage();
+                        wSPushMessage.ReadFrom(stream);
+                        if (wSPushMessage.Uri == 1400)
                         {
-                            Type = LiveMessageType.Chat,
-                            Message = content,
-                            UserName = uname,
-                            Color = color <= 0 ? Color.White : Utils.NumberToColor(color),
-                        });
-
-                    }
-                    if (wSPushMessage.Uri == 8006)
-                    {
-                        long online = 0;
-                        var s = new TarsInputStream(wSPushMessage.Msg);
-                        online = s.Read(online, 0, false);
-                        NewMessage?.Invoke(this, new LiveMessage()
+                            HYMessage messageNotice = new HYMessage();
+                            messageNotice.ReadFrom(new TarsInputStream(wSPushMessage.Msg));
+                            var uname = messageNotice.UserInfo.NickName;
+                            var content = messageNotice.Content;
+                            var color = messageNotice.BulletFormat.FontColor;
+                            NewMessageEvent?.Invoke(this, new LiveMessage()
+                            {
+                                Type = LiveMessageType.Chat,
+                                Message = content,
+                                UserName = uname,
+                                Color = color <= 0 ? Color.White : Utils.NumberToColor(color),
+                            });
+                        }
+                        if (wSPushMessage.Uri == 8006)
                         {
-                            Type = LiveMessageType.Online,
-                            Data = online,
-                        });
+                            long online = 0;
+                            var s = new TarsInputStream(wSPushMessage.Msg);
+                            online = s.Read(online, 0, false);
+                            NewMessageEvent?.Invoke(this, new LiveMessage()
+                            {
+                                Type = LiveMessageType.Online,
+                                Data = online,
+                            });
+                        }
                     }
                 }
+                catch (Exception)
+                {
+                }
             }
-            catch (Exception)
+            if (WsClient.State != WebSocketState.Open)
             {
+                OnClose();
             }
-
-
         }
 
-        private void Ws_OnClose(object sender, CloseEventArgs e)
+        private void OnClose()
         {
-            OnClose?.Invoke(this, e.Reason);
+            CloseEvent?.Invoke(this, WsClient.State.ToString());
         }
-
-        private void Ws_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
-        {
-            OnClose?.Invoke(this, e.Message);
-        }
-
-
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
@@ -128,30 +114,43 @@ namespace AllLive.Core.Danmaku
 
         public async void Heartbeat()
         {
-            await Task.Run(() =>
+            if (WsClient.State == WebSocketState.Open)
             {
-                ws.Send(heartBeatData);
-            });
+                await WsClient.SendAsync(new ArraySegment<byte>(HeartBeatData), WebSocketMessageType.Binary, true, default);
+            }
         }
 
         public async Task Start(object args)
         {
-            this.args = (HuyaDanmakuArgs)args;
-            await Task.Run(() =>
+            DanmakuArgs = (HuyaDanmakuArgs)args;
+            await WsClient.ConnectAsync(ServerUri, default);
+            if (WsClient.State == WebSocketState.Open)
             {
-                ws.Connect();
-            });
+                //发送进房信息
+                await WsClient.SendAsync(JoinData(DanmakuArgs.Ayyuid, DanmakuArgs.TopSid, DanmakuArgs.SubSid), WebSocketMessageType.Binary, true, default);
+                HeartBeatTimer.Start();
+                ReceiveMessage();
+            }
+            else
+            {
+                OnClose();
+            }
         }
 
         public async Task Stop()
         {
-            await Task.Run(() =>
+            if (WsClient.State == WebSocketState.Connecting)
             {
-                ws.Close();
-            });
+                WsClient.Abort();
+            }
+            if (WsClient.State == WebSocketState.Open)
+            {
+                await WsClient.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client closed", default);
+            }
+            HeartBeatTimer.Stop();
         }
 
-        private byte[] JoinData(long ayyuid, long tid, long sid)
+        private ArraySegment<byte> JoinData(long ayyuid, long tid, long sid)
         {
             var oos = new TarsOutputStream();
             oos.Write(ayyuid, 0);
@@ -166,12 +165,9 @@ namespace AllLive.Core.Danmaku
             var wscmd = new TarsOutputStream();
             wscmd.Write(1, 0);
             wscmd.Write(oos.toByteArray(), 1);
-            return wscmd.toByteArray();
-
-
+            return new ArraySegment<byte>(wscmd.toByteArray());
         }
     }
-
 
     public class HYPushMessage : TarsStruct
     {

@@ -5,13 +5,13 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Timers;
-using WebSocketSharp;
 /*
 * 哔哩哔哩弹幕实现
 * 参考文档：https://github.com/lovelyyoshino/Bilibili-Live-API/blob/master/API.WebSocket.md
@@ -21,68 +21,71 @@ namespace AllLive.Core.Danmaku
 
     public class BiliBiliDanmaku : ILiveDanmaku
     {
-        public event EventHandler<LiveMessage> NewMessage;
-        public event EventHandler<string> OnClose;
+        private readonly Uri ServerUri;
+        private readonly Timer HeartBeatTimer;
+        private readonly ClientWebSocket WsClient;
+
+        private int RoomId = 0;
+
         public int HeartbeatTime => 60 * 1000;
-        private int roomId = 0;
-        private readonly string ServerUrl = "wss://broadcastlv.chat.bilibili.com/sub";
-        Timer timer;
-        WebSocket ws;
+
+        public event EventHandler<LiveMessage> NewMessageEvent;
+        public event EventHandler<string> CloseEvent;
+
         public BiliBiliDanmaku()
         {
-            ws = new WebSocket(ServerUrl);
-            ws.OnOpen += Ws_OnOpen;
-            ws.OnError += Ws_OnError;
-            ws.OnMessage += Ws_OnMessage;
-            ws.OnClose += Ws_OnClose;
-            timer = new Timer(HeartbeatTime);
-            timer.Elapsed += Timer_Elapsed;
+            ServerUri = new Uri("wss://broadcastlv.chat.bilibili.com/sub");
+            WsClient = new ClientWebSocket();
+            HeartBeatTimer = new Timer(HeartbeatTime);
+            HeartBeatTimer.Elapsed += Timer_Elapsed;
         }
-        private async void Ws_OnOpen(object sender, EventArgs e)
+
+        private async void ReceiveMessage()
         {
-            await Task.Run(() =>
+            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
+            while (WsClient.State == WebSocketState.Open)
             {
-                //发送进房信息
-                ws.Send(EncodeData(JsonSerializer.Serialize(new
+                try
                 {
-                    roomid = roomId,
-                    uid = 0
-                }), 7));
-
-            });
-            timer.Start();
-
-        }
-        private void Ws_OnMessage(object sender, MessageEventArgs e)
-        {
-            try
-            {
-                ParseData(e.RawData);
+                    WebSocketReceiveResult result = await WsClient.ReceiveAsync(buffer, default);
+                    ParseData(buffer.Array);
+                }
+                catch (Exception)
+                {
+                }
             }
-            catch (Exception)
+            if (WsClient.State != WebSocketState.Open)
             {
+                OnClose();
             }
         }
 
-        private void Ws_OnClose(object sender, CloseEventArgs e)
+        private void OnClose()
         {
-            OnClose?.Invoke(this, e.Reason);
-        }
-
-        private void Ws_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
-        {
-            OnClose?.Invoke(this, e.Message);
+            CloseEvent?.Invoke(this, WsClient.State.ToString());
         }
 
         public async Task Start(object args)
         {
-            roomId = args.ToInt32();
-            await Task.Run(() =>
+            RoomId = args.ToInt32();
+            await WsClient.ConnectAsync(ServerUri, default);
+            if (WsClient.State == WebSocketState.Open)
             {
-                ws.Connect();
-            });
+                //发送进房信息
+                var data = EncodeData(JsonSerializer.Serialize(new
+                {
+                    roomid = RoomId,
+                    uid = 0
+                }), 7);
+                await WsClient.SendAsync(data, WebSocketMessageType.Binary, true, default);
+                HeartBeatTimer.Start();
+                ReceiveMessage();
+            }
+            else
+            {
+                OnClose();
+            }
         }
-
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
@@ -91,17 +94,23 @@ namespace AllLive.Core.Danmaku
 
         public async void Heartbeat()
         {
-            await Task.Run(() =>
+            if (WsClient.State == WebSocketState.Open)
             {
-                ws.Send(EncodeData("", 2));
-            });
+                await WsClient.SendAsync(EncodeData("", 2), WebSocketMessageType.Binary, true, default);
+            }
         }
+
         public async Task Stop()
         {
-            await Task.Run(() =>
+            if (WsClient.State == WebSocketState.Connecting)
             {
-                ws.Close();
-            });
+                WsClient.Abort();
+            }
+            if (WsClient.State == WebSocketState.Open)
+            {
+                await WsClient.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client closed", default);
+            }
+            HeartBeatTimer.Stop();
         }
 
         private void ParseData(byte[] data)
@@ -115,7 +124,7 @@ namespace AllLive.Core.Danmaku
             if (operation == 3)
             {
                 var online = BitConverter.ToInt32(body.Reverse().ToArray(), 0);
-                NewMessage?.Invoke(this, new LiveMessage()
+                NewMessageEvent?.Invoke(this, new LiveMessage()
                 {
                     Data = online,
                     Type = LiveMessageType.Online,
@@ -123,11 +132,9 @@ namespace AllLive.Core.Danmaku
             }
             else if (operation == 5)
             {
-
                 if (protocolVersion == 2)
                 {
                     body = DecompressData(body);
-
                 }
                 var text = Encoding.UTF8.GetString(body);
                 //可能有多条数据，做个分割
@@ -154,7 +161,7 @@ namespace AllLive.Core.Danmaku
                         if (obj["info"][2] != null && obj["info"][2].AsArray().Count != 0)
                         {
                             var username = obj["info"][2][1].ToString();
-                            NewMessage?.Invoke(this, new LiveMessage()
+                            NewMessageEvent?.Invoke(this, new LiveMessage()
                             {
                                 Type = LiveMessageType.Chat,
                                 Message = message,
@@ -169,7 +176,6 @@ namespace AllLive.Core.Danmaku
             {
 
             }
-
         }
 
         /// <summary>
@@ -178,7 +184,7 @@ namespace AllLive.Core.Danmaku
         /// <param name="msg">文本内容</param>
         /// <param name="action">2=心跳，7=进房</param>
         /// <returns></returns>
-        private byte[] EncodeData(string msg, int action)
+        private ArraySegment<byte> EncodeData(string msg, int action)
         {
             var data = Encoding.UTF8.GetBytes(msg);
             //头部长度固定16
@@ -206,11 +212,9 @@ namespace AllLive.Core.Danmaku
                 ms.Write(data, 0, data.Length);
                 var _bytes = ms.ToArray();
                 ms.Flush();
-                return _bytes;
+                return new ArraySegment<byte>(_bytes);
             }
-
         }
-
 
         /// <summary>
         /// 解码数据
@@ -222,7 +226,6 @@ namespace AllLive.Core.Danmaku
             using (MemoryStream outBuffer = new MemoryStream())
             using (System.IO.Compression.DeflateStream compressedzipStream = new System.IO.Compression.DeflateStream(new MemoryStream(data, 2, data.Length - 2), System.IO.Compression.CompressionMode.Decompress))
             {
-
                 byte[] block = new byte[1024];
                 while (true)
                 {
@@ -235,8 +238,6 @@ namespace AllLive.Core.Danmaku
                 compressedzipStream.Close();
                 return outBuffer.ToArray();
             }
-
-
         }
     }
 }

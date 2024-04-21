@@ -9,8 +9,8 @@ namespace AllLive.Core.Danmaku
     {
         public int HeartbeatTime => 60;
 
-        public event EventHandler<LiveMessage> NewMessage;
-        public event EventHandler<string> OnClose;
+        public event EventHandler<LiveMessage> NewMessageEvent;
+        public event EventHandler<string> CloseEvent;
 
         public void Heartbeat()
         {

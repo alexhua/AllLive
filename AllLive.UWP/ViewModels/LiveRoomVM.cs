@@ -184,8 +184,8 @@ namespace AllLive.UWP.ViewModels
                     Message = "开始接收弹幕"
                 });
 
-                LiveDanmaku.NewMessage += LiveDanmaku_NewMessage;
-                LiveDanmaku.OnClose += LiveDanmaku_OnClose;
+                LiveDanmaku.NewMessageEvent += LiveDanmaku_NewMessage;
+                LiveDanmaku.CloseEvent += LiveDanmaku_OnClose;
                 await LiveDanmaku.Start(result.DanmakuData);
                 if (detail.Status)
                 {
@@ -280,10 +280,6 @@ namespace AllLive.UWP.ViewModels
             {
                 Utils.ShowMessageToast("加载播放地址失败");
             }
-
-
-
-
         }
 
 
@@ -296,8 +292,17 @@ namespace AllLive.UWP.ViewModels
                 {
                     Type = LiveMessageType.Chat,
                     UserName = "系统",
-                    Message = "连接已经关闭"
+                    Message = "连接已经关闭 "
                 });
+                if (e != null)
+                {
+                    Messages.Add(new LiveMessage()
+                    {
+                        Type = LiveMessageType.Chat,
+                        UserName = "连接",
+                        Message = e.ToString()
+                    });
+                }
             });
         }
         public CoreDispatcher Dispatcher { get; set; }
@@ -334,8 +339,8 @@ namespace AllLive.UWP.ViewModels
             Messages.Clear();
             if (LiveDanmaku != null)
             {
-                LiveDanmaku.NewMessage -= LiveDanmaku_NewMessage;
-                LiveDanmaku.OnClose -= LiveDanmaku_OnClose;
+                LiveDanmaku.NewMessageEvent -= LiveDanmaku_NewMessage;
+                LiveDanmaku.CloseEvent -= LiveDanmaku_OnClose;
                 await LiveDanmaku.Stop();
                 LiveDanmaku = null;
             }
