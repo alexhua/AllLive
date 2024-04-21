@@ -2,12 +2,7 @@
 using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Timers;
 using Tup.Tars;
@@ -22,7 +17,7 @@ namespace AllLive.Core.Danmaku
 {
     public class HuyaDanmakuArgs
     {
-        public HuyaDanmakuArgs(long ayyuid,long topSid,long subSid)
+        public HuyaDanmakuArgs(long ayyuid, long topSid, long subSid)
         {
             this.Ayyuid = ayyuid;
             this.SubSid = subSid;
@@ -90,7 +85,7 @@ namespace AllLive.Core.Danmaku
                             Type = LiveMessageType.Chat,
                             Message = content,
                             UserName = uname,
-                            Color= color <= 0 ? Color.White : Utils.NumberToColor(color),
+                            Color = color <= 0 ? Color.White : Utils.NumberToColor(color),
                         });
 
                     }
@@ -110,7 +105,7 @@ namespace AllLive.Core.Danmaku
             catch (Exception)
             {
             }
-           
+
 
         }
 
@@ -243,7 +238,7 @@ namespace AllLive.Core.Danmaku
     }
     public class HYBulletFormat : TarsStruct
     {
-        public int FontColor =0;
+        public int FontColor = 0;
         public int FontSize = 4;
         public int TextSpeed = 0;
         public int TransitionType = 1;

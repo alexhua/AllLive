@@ -14,12 +14,10 @@
  * specific language governing permissions and limitations under the License.
  */
 
-using Tup.Tars;
-
 using System;
-using System.Text;
 using System.Collections.Generic;
 using System.IO;
+using Tup.Tars;
 
 namespace Tup
 {
@@ -118,7 +116,7 @@ namespace Tup
             }
 
             _package.sBuffer = TarsUtil.getTarsBufArray(_os.getMemoryStream());
-            
+
             _os = new TarsOutputStream(0);
             _os.setServerEncoding(EncodeName);
             this.WriteTo(_os);
@@ -167,7 +165,7 @@ namespace Tup
                 }
                 else
                 {
-                    _new_data = (Dictionary<string, byte[]>)_is.readMap<Dictionary<string, byte[]>>(0, false);  
+                    _new_data = (Dictionary<string, byte[]>)_is.readMap<Dictionary<string, byte[]>>(0, false);
                 }
             }
             catch (Exception e)
@@ -186,7 +184,7 @@ namespace Tup
         {
             _package.ReadFrom(_is);
         }
-        
+
         public int OldRespIRet { get; set; }
 
         /**

@@ -14,12 +14,10 @@
  * specific language governing permissions and limitations under the License.
  */
 
-using System.IO;
 using System;
-using System.Collections.Generic;
-using Tup;
-using System.Text;
 using System.Collections;
+using System.Collections.Generic;
+using System.IO;
 
 namespace Tup.Tars
 {
@@ -82,7 +80,7 @@ namespace Tup.Tars
             if (null != this.ms)
             {
                 ms = null;
-                this.ms = new MemoryStream(bs, index, bs.Length-index);
+                this.ms = new MemoryStream(bs, index, bs.Length - index);
                 br = null;
                 br = new BinaryReader(ms);
             }
@@ -102,10 +100,10 @@ namespace Tup.Tars
          */
         public static int readHead(HeadData hd, BinaryReader bb)
         {
-			if(bb.BaseStream.Position >= bb.BaseStream.Length)
-			{
-				throw new TarsDecodeException("read file to end");
-			}
+            if (bb.BaseStream.Position >= bb.BaseStream.Length)
+            {
+                throw new TarsDecodeException("read file to end");
+            }
             byte b = bb.ReadByte();
             hd.type = (byte)(b & 15);
             hd.tag = ((b & (15 << 4)) >> 4);
@@ -367,7 +365,7 @@ namespace Tup.Tars
             {
                 HeadData hd = new HeadData();
                 readHead(hd);
-                
+
 
                 switch (hd.type)
                 {
@@ -1136,7 +1134,7 @@ namespace Tup.Tars
             }
             return null;
         }
-        
+
         public TarsStruct directRead(TarsStruct o, int tag, bool isRequire)
         {
             //o必须有一个无参的构造函数

@@ -3,7 +3,6 @@ using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AllLive.Core
@@ -22,7 +21,7 @@ namespace AllLive.Core
             throw new NotImplementedException();
         }
 
-       
+
 
         public Task<List<LivePlayQuality>> GetPlayQuality(LiveRoomDetail roomDetail)
         {

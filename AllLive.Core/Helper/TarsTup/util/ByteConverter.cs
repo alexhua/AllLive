@@ -15,7 +15,6 @@
  */
 
 using System;
-using System.Net;
 using System.Collections.Generic;
 using System.Text;
 
@@ -85,7 +84,7 @@ namespace Tup
             int nLenWithoutZero = 0;
             for (; nLenWithoutZero < bytes.Length; nLenWithoutZero++)
             {
-                if(bytes[nLenWithoutZero] == 0)
+                if (bytes[nLenWithoutZero] == 0)
                 {
                     break;
                 }
@@ -102,7 +101,7 @@ namespace Tup
                 {
                     break;
                 }
-                if(byteWithoutZero[i] == 0x14)
+                if (byteWithoutZero[i] == 0x14)
                 {
                     listIndexes.Add(i);
                     i++;
@@ -149,12 +148,12 @@ namespace Tup
         {
             byte high = (byte)((ch >> 8) & 0xff);
             byte low = (byte)(ch & 0xff);
-            if (high == 0 && ((low&0x80)!=0))
+            if (high == 0 && ((low & 0x80) != 0))
             {
                 return false;
             }
             return true;
-            
+
         }
         /// <summary>
         /// 写本地文件是使用
@@ -162,13 +161,14 @@ namespace Tup
         /// <param name="strInput"></param>
         /// <param name="IsLocalString"></param>
         /// <returns></returns>
-        public static byte[] String2Bytes(string strInput,bool IsLocalString)
+        public static byte[] String2Bytes(string strInput, bool IsLocalString)
         {
             if (!IsLocalString)
             {
                 return String2Bytes(strInput);
             }
-            else {
+            else
+            {
                 return Encoding.UTF8.GetBytes(strInput);
             }
         }

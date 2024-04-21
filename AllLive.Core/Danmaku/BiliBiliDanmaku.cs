@@ -2,7 +2,6 @@
 using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -160,7 +159,7 @@ namespace AllLive.Core.Danmaku
                                 Type = LiveMessageType.Chat,
                                 Message = message,
                                 UserName = username,
-                                Color = color==0?Color.White: Utils.NumberToColor(color),
+                                Color = color == 0 ? Color.White : Utils.NumberToColor(color),
                             });
                         }
                     }

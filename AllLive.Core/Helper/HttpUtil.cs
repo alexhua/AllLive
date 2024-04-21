@@ -1,21 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using System.Net.Http;
-using System.Net;
 
 namespace AllLive.Core.Helper
 {
     public static class HttpUtil
     {
-        public static async Task<string> GetString(string url,IDictionary<string,string> headers=null)
+        public static async Task<string> GetString(string url, IDictionary<string, string> headers = null)
         {
             HttpClientHandler httpClientHandler = new HttpClientHandler
             {
-                AutomaticDecompression = DecompressionMethods.GZip| DecompressionMethods.Deflate
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
             };
-            using (HttpClient httpClient=new HttpClient(httpClientHandler))
+            using (HttpClient httpClient = new HttpClient(httpClientHandler))
             {
                 if (headers != null)
                 {
@@ -24,7 +23,7 @@ namespace AllLive.Core.Helper
                         httpClient.DefaultRequestHeaders.Add(item.Key, item.Value);
                     }
                 }
-               var result=await httpClient.GetAsync(url);
+                var result = await httpClient.GetAsync(url);
                 result.EnsureSuccessStatusCode();
                 return await result.Content.ReadAsStringAsync();
             }
@@ -46,10 +45,10 @@ namespace AllLive.Core.Helper
                 }
                 var result = await httpClient.GetAsync(url);
                 result.EnsureSuccessStatusCode();
-                return Encoding.UTF8.GetString( await result.Content.ReadAsByteArrayAsync());
+                return Encoding.UTF8.GetString(await result.Content.ReadAsByteArrayAsync());
             }
         }
-        public static async Task<string> PostString(string url, string data,IDictionary<string, string> headers = null)
+        public static async Task<string> PostString(string url, string data, IDictionary<string, string> headers = null)
         {
             using (HttpClient httpClient = new HttpClient())
             {

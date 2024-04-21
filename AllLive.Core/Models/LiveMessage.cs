@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Text;
+﻿using System.Drawing;
 
 namespace AllLive.Core.Models
 {
@@ -42,6 +39,6 @@ namespace AllLive.Core.Models
         /// <summary>
         /// 弹幕颜色
         /// </summary>
-        public Color Color { get; set; }= Color.White;
+        public Color Color { get; set; } = Color.White;
     }
 }

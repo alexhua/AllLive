@@ -17,8 +17,6 @@
 
 using System.Text;
 
-using Tup.Tars;
-
 namespace Tup.Tars
 {
     internal enum TarsStructType
@@ -48,5 +46,5 @@ namespace Tup.Tars
         public virtual void Display(StringBuilder sb, int level)
         {
         }
-   }
+    }
 }

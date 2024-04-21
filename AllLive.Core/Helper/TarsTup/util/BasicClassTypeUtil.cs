@@ -16,10 +16,8 @@
 
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using System.Reflection;
 
 namespace Tup
 {
@@ -120,7 +118,7 @@ namespace Tup
                 {
                     return new char[0];
                 }
-                
+
                 return Activator.CreateInstance(type);
             }
             catch (Exception ex)

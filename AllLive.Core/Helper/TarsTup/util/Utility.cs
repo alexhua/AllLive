@@ -15,11 +15,8 @@
  */
 
 using System;
-using System.Net;
-using System.IO.IsolatedStorage;
-using System.IO;
-using System.Text;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Tup.Utility
 {
@@ -55,9 +52,9 @@ namespace Tup.Utility
             string strOutput = "";
 
             List<int> listIndexes = new List<int>();
-            for (int i = 0; i < bytes.Length-1; i++)
+            for (int i = 0; i < bytes.Length - 1; i++)
             {
-                if (((bytes[i] & 0x80) != 0) && ((bytes[i+1] & 0x80) != 0))
+                if (((bytes[i] & 0x80) != 0) && ((bytes[i + 1] & 0x80) != 0))
                 {
                     listIndexes.Add(i);
                 }
@@ -67,7 +64,7 @@ namespace Tup.Utility
             {
                 if (listIndexes[0] > 0)
                 {
-                    strOutput += Encoding.UTF8.GetString(bytes, 0, listIndexes[0]); 
+                    strOutput += Encoding.UTF8.GetString(bytes, 0, listIndexes[0]);
                 }
 
                 strOutput += (char)listIndexes[0];
@@ -75,10 +72,10 @@ namespace Tup.Utility
 
             for (int i = 1; i < listIndexes.Count; i++)
             {
-                int num = listIndexes[i] - listIndexes[i - 1] -1;
+                int num = listIndexes[i] - listIndexes[i - 1] - 1;
                 if (num > 0)
                 {
-                    strOutput += Encoding.UTF8.GetString(bytes, listIndexes[i - 1]+1, num); 
+                    strOutput += Encoding.UTF8.GetString(bytes, listIndexes[i - 1] + 1, num);
                 }
 
                 strOutput += (char)listIndexes[i];
@@ -92,9 +89,9 @@ namespace Tup.Utility
             }
             if (leftIndex < bytes.Length)
             {
-                strOutput += Encoding.UTF8.GetString(bytes, leftIndex, bytes.Length - leftIndex); 
+                strOutput += Encoding.UTF8.GetString(bytes, leftIndex, bytes.Length - leftIndex);
             }
-            return strOutput;                        
+            return strOutput;
         }
 
         public static string Hex2String(byte[] buffer)
@@ -112,6 +109,6 @@ namespace Tup.Utility
 
             return strOutput;
         }
-                
+
     }
 }

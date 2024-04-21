@@ -2,13 +2,10 @@
 using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Timers;
 using WebSocketSharp;
@@ -72,7 +69,7 @@ namespace AllLive.Core.Danmaku
                         {
                             UserName = json["nn"].ToString(),
                             Message = json["txt"].ToString(),
-                            Color= GetColor(json["col"].ToInt32())
+                            Color = GetColor(json["col"].ToInt32())
                         });
                     }
 

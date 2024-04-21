@@ -15,14 +15,11 @@
  */
 
 
-using Tup.Tars;
-using Tup;
-
 using System;
-using System.Text;
-using System.IO;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 
 namespace Tup.Tars
 {
@@ -142,7 +139,7 @@ namespace Tup.Tars
         public void Write(short n, int tag)
         {
             reserve(4);
-            if(n>=-128 && n<=127)
+            if (n >= -128 && n <= 127)
             {
                 Write((byte)n, tag);
             }
@@ -329,7 +326,7 @@ namespace Tup.Tars
             }
         }
 
-        public void Write(string s, int tag,bool IsLocalString = false)
+        public void Write(string s, int tag, bool IsLocalString = false)
         {
             byte[] by;
             try
@@ -392,7 +389,7 @@ namespace Tup.Tars
         {
             reserve(8);
             writeHead((byte)TarsStructType.MAP, tag);
-            
+
             Write(m == null ? 0 : m.Count, 0);
             if (m != null)
             {
@@ -454,7 +451,7 @@ namespace Tup.Tars
 
             try
             {
-                if(l != null)
+                if (l != null)
                 {
                     bw.Write(l);
                 }
@@ -593,10 +590,10 @@ namespace Tup.Tars
         {
             reserve(8);
             writeHead((byte)TarsStructType.LIST, tag);
-            Write(l == null ? 0 : (l.Count>0?l.Count:0), 0);
+            Write(l == null ? 0 : (l.Count > 0 ? l.Count : 0), 0);
             if (l != null)
             {
-                for(int i = 0; i<l.Count; i++)
+                for (int i = 0; i < l.Count; i++)
                 {
                     Write(l[i], 0);
                 }
