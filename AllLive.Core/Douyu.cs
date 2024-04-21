@@ -159,8 +159,7 @@ namespace AllLive.Core
 
             engine.Execute(html);
             //调用ub98484234函数，返回格式化后的js
-            engine.Execute("ub98484234()");
-            var jsCode = engine.GetCompletionValue().ToString();
+            var jsCode = engine.Invoke("ub98484234").AsString();
 
             var v = Regex.Match(jsCode, @"v=(\d+)").Groups[1].Value;
             //对参数进行MD5，替换掉JS的CryptoJS\.MD5
@@ -172,9 +171,8 @@ namespace AllLive.Core
             //将JS中的MD5方法直接替换成加密完成的rb
             jsCode2 = Regex.Replace(jsCode2, @"CryptoJS\.MD5\(cb\)\.toString\(\)", $@"""{rb}""");
             engine.Execute(jsCode2);
-            //返回参数
-            engine.Execute($"sign('{rid}','{did}','{time}')");
-            var args = engine.GetCompletionValue().ToString();
+            //调用sign函数，返回参数
+            var args = engine.Invoke("sign", rid, did, time).AsString();
             return args;
         }
 

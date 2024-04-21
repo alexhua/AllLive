@@ -57,7 +57,7 @@ namespace AllLive.UWP.Views
             liveRoomVM.Dispatcher = this.Dispatcher;
             dispRequest = new DisplayRequest();
             _config = new MediaSourceConfig();
-            _config.ReadAheadBufferDuration = TimeSpan.FromSeconds(3);
+            _config.ReadAheadBufferDuration = TimeSpan.FromSeconds(5);
             _config.FFmpegOptions.Add("rw_timeout", 8 * 1000000);
             _config.FFmpegOptions.Add("reconnect_at_eof", 1);
             _config.FFmpegOptions.Add("reconnect_streamed", 1);

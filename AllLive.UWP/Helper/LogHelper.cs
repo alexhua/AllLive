@@ -1,5 +1,4 @@
 ﻿using NLog;
-using NLog.Config;
 using System;
 using System.Diagnostics;
 
@@ -15,13 +14,12 @@ namespace AllLive.UWP.Helper
     }
     public class LogHelper
     {
-        public static LoggingConfiguration config;
+        public static bool isConfigSetup = false;
         public static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         public static void Log(string message, LogType type, Exception ex = null)
         {
-            if (config == null)
+            if (!isConfigSetup)
             {
-                config = new NLog.Config.LoggingConfiguration();
                 Windows.Storage.StorageFolder storageFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
                 var logfile = new NLog.Targets.FileTarget()
                 {
@@ -30,11 +28,11 @@ namespace AllLive.UWP.Helper
                     FileName = storageFolder.Path + @"\log\" + DateTime.Now.ToString("yyyyMMdd") + ".log",
                     Layout = "${longdate}|${level:uppercase=true}|${logger}|${threadid}|${message}|${exception:format=Message,StackTrace}"
                 };
-                config.AddRule(LogLevel.Info, LogLevel.Info, logfile);
-                config.AddRule(LogLevel.Debug, LogLevel.Debug, logfile);
-                config.AddRule(LogLevel.Error, LogLevel.Error, logfile);
-                config.AddRule(LogLevel.Fatal, LogLevel.Fatal, logfile);
-                NLog.LogManager.Configuration = config;
+                NLog.LogManager.Setup().LoadConfiguration(builder =>
+                {
+                    builder.ForLogger().FilterMinLevel(LogLevel.Debug).FilterMaxLevel(LogLevel.Fatal).WriteTo(logfile);
+                });
+                isConfigSetup = true;
             }
             Debug.WriteLine("[" + LogType.INFO.ToString() + "]" + message);
             switch (type)
