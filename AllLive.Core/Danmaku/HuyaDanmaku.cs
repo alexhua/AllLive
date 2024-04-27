@@ -32,6 +32,7 @@ namespace AllLive.Core.Danmaku
         private readonly Uri ServerUri;
         private readonly Timer HeartBeatTimer;
         private readonly ClientWebSocket WsClient;
+        private readonly System.Threading.Thread ReceiveThread;
         private readonly byte[] HeartBeatData;
 
         private HuyaDanmakuArgs DanmakuArgs;
@@ -42,21 +43,22 @@ namespace AllLive.Core.Danmaku
 
         public HuyaDanmaku()
         {
-            HeartBeatData = Convert.FromBase64String("ABQdAAwsNgBM");
             ServerUri = new Uri("wss://cdnws.api.huya.com");
             WsClient = new ClientWebSocket();
+            ReceiveThread = new System.Threading.Thread(ReceiveMessage);
+            HeartBeatData = Convert.FromBase64String("ABQdAAwsNgBM");
             HeartBeatTimer = new Timer(HeartbeatTime);
             HeartBeatTimer.Elapsed += Timer_Elapsed;
         }
 
-        private async void ReceiveMessage()
+        private void ReceiveMessage()
         {
             ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
             while (WsClient.State == WebSocketState.Open)
             {
                 try
                 {
-                    WebSocketReceiveResult result = await WsClient.ReceiveAsync(buffer, default);
+                    WsClient.ReceiveAsync(buffer, default).Wait();
                     var stream = new TarsInputStream(buffer.Array);
                     var type = stream.Read(0, 0, false);
                     if (type == 7)
@@ -94,6 +96,7 @@ namespace AllLive.Core.Danmaku
                 }
                 catch (Exception)
                 {
+                    break;
                 }
             }
             if (WsClient.State != WebSocketState.Open)
@@ -129,7 +132,8 @@ namespace AllLive.Core.Danmaku
                 //发送进房信息
                 await WsClient.SendAsync(JoinData(DanmakuArgs.Ayyuid, DanmakuArgs.TopSid, DanmakuArgs.SubSid), WebSocketMessageType.Binary, true, default);
                 HeartBeatTimer.Start();
-                ReceiveMessage();
+                //ReceiveMessage();
+                ReceiveThread.Start();
             }
             else
             {

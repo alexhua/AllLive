@@ -24,7 +24,9 @@ namespace AllLive.Core.Danmaku
     {
         private readonly Uri ServerUri;
         private readonly Timer HeartBeatTimer;
+        private readonly ArraySegment<byte> HeartBeatData;
         private readonly ClientWebSocket WsClient;
+        private readonly System.Threading.Thread ReceiveThread;
 
         private string roomId;
 
@@ -37,18 +39,21 @@ namespace AllLive.Core.Danmaku
         {
             ServerUri = new Uri("wss://danmuproxy.douyu.com:8506");
             WsClient = new ClientWebSocket();
+            ReceiveThread = new System.Threading.Thread(ReceiveMessage);
+
+            HeartBeatData = SerializeDouyu($"type@=mrkl/");
             HeartBeatTimer = new Timer(HeartbeatTime);
             HeartBeatTimer.Elapsed += Timer_Elapsed;
         }
 
-        private async void ReceiveMessage()
+        private void ReceiveMessage()
         {
             ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
             while (WsClient.State == WebSocketState.Open)
             {
                 try
                 {
-                    WebSocketReceiveResult result = await WsClient.ReceiveAsync(buffer, default);
+                    WsClient.ReceiveAsync(buffer, default).Wait();
                     string message = DeserializeDouyu(buffer.Array);
                     if (message.Length != 0)
                     {
@@ -69,6 +74,7 @@ namespace AllLive.Core.Danmaku
                 }
                 catch (Exception)
                 {
+                    break;
                 }
             }
             if (WsClient.State != WebSocketState.Open)
@@ -107,7 +113,7 @@ namespace AllLive.Core.Danmaku
         {
             if (WsClient.State == WebSocketState.Open)
             {
-                await WsClient.SendAsync(SerializeDouyu($"type@=mrkl/"), WebSocketMessageType.Binary, true, default);
+                await WsClient.SendAsync(HeartBeatData, WebSocketMessageType.Binary, true, default);
             }
         }
 
@@ -121,7 +127,8 @@ namespace AllLive.Core.Danmaku
                 await WsClient.SendAsync(SerializeDouyu($"type@=loginreq/roomid@={roomId}/"), WebSocketMessageType.Binary, true, default);
                 await WsClient.SendAsync(SerializeDouyu($"type@=joingroup/rid@={roomId}/gid@=-9999/"), WebSocketMessageType.Binary, true, default);
                 HeartBeatTimer.Start();
-                ReceiveMessage();
+                //ReceiveMessage();
+                ReceiveThread.Start();
             }
             else
             {

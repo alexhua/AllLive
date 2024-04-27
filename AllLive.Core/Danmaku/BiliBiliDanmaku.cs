@@ -52,6 +52,7 @@ namespace AllLive.Core.Danmaku
                 }
                 catch (Exception)
                 {
+                    break;
                 }
             }
             if (WsClient.State != WebSocketState.Open)
@@ -71,11 +72,23 @@ namespace AllLive.Core.Danmaku
             await WsClient.ConnectAsync(ServerUri, default);
             if (WsClient.State == WebSocketState.Open)
             {
+                string token = "";
+                try
+                {
+                    var result = await HttpUtil.GetString($"https://api.live.bilibili.com/room/v1/Danmu/getConf?room_id={RoomId}&platform=pc&player=web");
+                    token = JsonNode.Parse(result)["data"]["token"].ToString();
+                }
+                catch (Exception) { }
                 //发送进房信息
                 var data = EncodeData(JsonSerializer.Serialize(new
                 {
+                    uid = 0,
                     roomid = RoomId,
-                    uid = 0
+                    protover = 2,
+                    buvid = System.Guid.NewGuid().ToString(),
+                    platform = "web",
+                    type = 2,
+                    key = token
                 }), 7);
                 await WsClient.SendAsync(data, WebSocketMessageType.Binary, true, default);
                 HeartBeatTimer.Start();
