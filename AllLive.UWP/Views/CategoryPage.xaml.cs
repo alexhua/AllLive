@@ -21,6 +21,13 @@ namespace AllLive.UWP.Views
             this.NavigationCacheMode = NavigationCacheMode.Enabled;
             this.InitializeComponent();
         }
+
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            categoryVM.Items.Clear();
+            base.OnNavigatingFrom(e);
+        }
+
         private void pivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (pivot.SelectedItem == null) return;

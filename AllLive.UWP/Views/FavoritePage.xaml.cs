@@ -18,14 +18,20 @@ namespace AllLive.UWP.Views
         readonly FavoriteVM favoriteVM;
         public FavoritePage()
         {
-            favoriteVM = new FavoriteVM();
             this.InitializeComponent();
-            Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
+            favoriteVM = new FavoriteVM();
         }
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
             favoriteVM.LoadData();
+            Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
+        }
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            favoriteVM.Items.Clear();
+            Window.Current.CoreWindow.KeyDown -= CoreWindow_KeyDown;
+            base.OnNavigatingFrom(e);
         }
 
         private void ls_ItemClick(object sender, ItemClickEventArgs e)

@@ -10,11 +10,16 @@ namespace AllLive.UWP.ViewModels
 {
     public class FavoriteVM : BaseViewModel
     {
+        private readonly List<Task<LiveRoomDetail>> DetailTasks;
+        private readonly List<Task<LiveRoomDetail>> DetailTasksShadow;
+
         public ObservableCollection<FavoriteItem> Items { get; set; }
 
         public FavoriteVM()
         {
             Items = new ObservableCollection<FavoriteItem>();
+            DetailTasks = new List<Task<LiveRoomDetail>>();
+            DetailTasksShadow = new List<Task<LiveRoomDetail>>();
             LoadProgress = 0;
         }
 
@@ -23,9 +28,7 @@ namespace AllLive.UWP.ViewModels
             try
             {
                 Loading = true;
-                LoadProgress = 0;
-                var DetailTasks = new List<Task<LiveRoomDetail>>();
-                var DetailTasksShadow = new List<Task<LiveRoomDetail>>();
+                LoadProgress = 0;                
 
                 foreach (var item in await DatabaseHelper.GetFavorites())
                 {
@@ -72,7 +75,6 @@ namespace AllLive.UWP.ViewModels
                         LoadProgress += 1d / Items.Count;
                     }
                 }
-                DetailTasksShadow.Clear();
                 LoadProgress = 1;
             }
             catch (Exception ex)
@@ -82,6 +84,8 @@ namespace AllLive.UWP.ViewModels
             finally
             {
                 Loading = false;
+                DetailTasks.Clear();
+                DetailTasksShadow.Clear();
             }
         }
 

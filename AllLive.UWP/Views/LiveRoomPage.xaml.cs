@@ -63,7 +63,6 @@ namespace AllLive.UWP.Views
             _config.FFmpegOptions.Add("reconnect_streamed", 1);
             _config.FFmpegOptions.Add("reconnect_on_network_error", 1);
             _config.FFmpegOptions.Add("reconnect_delay_max", 5);
-            Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
             liveRoomVM.ChangedPlayUrl += LiveRoomVM_ChangedPlayUrl;
             liveRoomVM.AddDanmaku += LiveRoomVM_AddDanmaku;
             //每过2秒就设置焦点
@@ -349,6 +348,7 @@ namespace AllLive.UWP.Views
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
+            Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
             if (e.NavigationMode == NavigationMode.New)
             {
                 pageArgs = e.Parameter as PageArgs;
@@ -372,7 +372,6 @@ namespace AllLive.UWP.Views
                 var data = pageArgs.Data as LiveRoomItem;
                 MessageCenter.ChangeTitle("", pageArgs.Site);
                 liveRoomVM.LoadData(pageArgs.Site, data.RoomID);
-
             }
         }
 

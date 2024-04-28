@@ -26,6 +26,11 @@ namespace AllLive.UWP.Views
             base.OnNavigatedTo(e);
             historyVM.LoadData();
         }
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            historyVM.Items.Clear();
+            base.OnNavigatingFrom(e);
+        }
 
         private void ls_ItemClick(object sender, ItemClickEventArgs e)
         {

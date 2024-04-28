@@ -151,13 +151,13 @@ namespace AllLive.Core
         private string GetPlayArgs(string html, string rid)
         {
             //取加密的js
-            html = Regex.Match(html, @"(vdwdae325w_64we[\s\S]*function ub98484234[\s\S]*?)function").Groups[1].Value;
-            html = Regex.Replace(html, @"eval.*?;}", "strc;}");
+            var ub98484234 = Regex.Match(html, @"(vdwdae325w_64we[\s\S]*function ub98484234[\s\S]*?)function").Groups[1].Value;
+            var strc = Regex.Replace(ub98484234, @"eval.*?;}", "strc;}");
             var engine = new Engine();
             var did = "10000000000000000000000000001501";
             var time = Core.Helper.Utils.GetTimestamp();
 
-            engine.Execute(html);
+            engine.Execute(strc);
             //调用ub98484234函数，返回格式化后的js
             var jsCode = engine.Invoke("ub98484234").AsString();
 
@@ -165,14 +165,15 @@ namespace AllLive.Core
             //对参数进行MD5，替换掉JS的CryptoJS\.MD5
             var rb = Core.Helper.Utils.ToMD5(rid + did + time + v);
 
-            var jsCode2 = Regex.Replace(jsCode, @"return rt;}\);?", "return rt;}");
+            var jsCode1 = Regex.Replace(jsCode, @"return rt;}\);?", "return rt;}");
             //设置方法名为sign
-            jsCode2 = Regex.Replace(jsCode2, @"\(function \(", "function sign(");
+            var jsCode2 = Regex.Replace(jsCode1, @"\(function \(", "function sign(");
             //将JS中的MD5方法直接替换成加密完成的rb
-            jsCode2 = Regex.Replace(jsCode2, @"CryptoJS\.MD5\(cb\)\.toString\(\)", $@"""{rb}""");
-            engine.Execute(jsCode2);
+            var jsCode3 = Regex.Replace(jsCode2, @"CryptoJS\.MD5\(cb\)\.toString\(\)", $@"""{rb}""");
+            engine.Execute(jsCode3);
             //调用sign函数，返回参数
             var args = engine.Invoke("sign", rid, did, time).AsString();
+            engine.Dispose();
             return args;
         }
 
@@ -181,7 +182,6 @@ namespace AllLive.Core
             LiveSearchResult searchResult = new LiveSearchResult()
             {
                 Rooms = new List<LiveRoomItem>(),
-
             };
             var result = await HttpUtil.GetString($"https://www.douyu.com/japi/search/api/searchShow?kw={Uri.EscapeDataString(keyword)}&page={page}&pageSize=20");
             var obj = JsonNode.Parse(result);
