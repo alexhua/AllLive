@@ -121,7 +121,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
-    <UseDotNetNativeToolchain>false</UseDotNetNativeToolchain>
+    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <EnableGatekeeperAnalysis>false</EnableGatekeeperAnalysis>
   </PropertyGroup>
@@ -347,13 +347,14 @@
       <Version>2.8.6</Version>
     </PackageReference>
     <PackageReference Include="NLog">
-      <Version>5.2.8</Version>
-    </PackageReference>
-    <PackageReference Include="NSDanmaku">
-      <Version>2.2.0</Version>
+      <Version>5.3.1</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\NSDanmaku\NSDanmaku\NSDanmaku.csproj">
+      <Project>{964d5bcc-c063-45cc-aeea-89169e4a2e5e}</Project>
+      <Name>NSDanmaku</Name>
+    </ProjectReference>
     <ProjectReference Include="..\AllLive.Core\AllLive.Core.csproj">
       <Project>{b00dc113-7b3a-46c3-9661-eda0de11b882}</Project>
       <Name>AllLive.Core</Name>
