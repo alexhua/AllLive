@@ -48,13 +48,13 @@ namespace AllLive.Core.Danmaku
 
         private void ReceiveMessage()
         {
-            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
+            var buffer = new byte[4096];
             while (WsClient.State == WebSocketState.Open)
             {
                 try
                 {
-                    WsClient.ReceiveAsync(buffer, default).Wait();
-                    string message = DeserializeDouyu(buffer.Array);
+                    WsClient.ReceiveAsync(new ArraySegment<byte>(buffer), default).Wait();
+                    string message = DeserializeDouyu(buffer);
                     if (message.Length != 0)
                     {
                         var json = SttToJObject(message);
@@ -120,17 +120,24 @@ namespace AllLive.Core.Danmaku
         public async Task Start(object args)
         {
             this.roomId = args.ToString();
-            await WsClient.ConnectAsync(ServerUri, default);
-            if (WsClient.State == WebSocketState.Open)
+            try
             {
-                //发送进房信息
-                await WsClient.SendAsync(SerializeDouyu($"type@=loginreq/roomid@={roomId}/"), WebSocketMessageType.Binary, true, default);
-                await WsClient.SendAsync(SerializeDouyu($"type@=joingroup/rid@={roomId}/gid@=-9999/"), WebSocketMessageType.Binary, true, default);
-                HeartBeatTimer.Start();
-                //ReceiveMessage();
-                ReceiveThread.Start();
+                await WsClient.ConnectAsync(ServerUri, default);
+                if (WsClient.State == WebSocketState.Open)
+                {
+                    //发送进房信息
+                    await WsClient.SendAsync(SerializeDouyu($"type@=loginreq/roomid@={roomId}/"), WebSocketMessageType.Binary, true, default);
+                    await WsClient.SendAsync(SerializeDouyu($"type@=joingroup/rid@={roomId}/gid@=-9999/"), WebSocketMessageType.Binary, true, default);
+                    HeartBeatTimer.Start();
+                    //ReceiveMessage();
+                    ReceiveThread.Start();
+                }
+                else
+                {
+                    OnClose();
+                }
             }
-            else
+            catch (Exception)
             {
                 OnClose();
             }

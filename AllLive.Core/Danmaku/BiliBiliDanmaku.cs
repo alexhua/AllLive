@@ -42,13 +42,13 @@ namespace AllLive.Core.Danmaku
 
         private async void ReceiveMessage()
         {
-            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
+            var buffer = new byte[4096];
             while (WsClient.State == WebSocketState.Open)
             {
                 try
                 {
-                    WebSocketReceiveResult result = await WsClient.ReceiveAsync(buffer, default);
-                    ParseData(buffer.Array);
+                    await WsClient.ReceiveAsync(new ArraySegment<byte>(buffer), default);
+                    ParseData(buffer);
                 }
                 catch (Exception)
                 {
@@ -69,32 +69,39 @@ namespace AllLive.Core.Danmaku
         public async Task Start(object args)
         {
             RoomId = args.ToInt32();
-            await WsClient.ConnectAsync(ServerUri, default);
-            if (WsClient.State == WebSocketState.Open)
+            try
             {
-                string token = "";
-                try
+                await WsClient.ConnectAsync(ServerUri, default);
+                if (WsClient.State == WebSocketState.Open)
                 {
-                    var result = await HttpUtil.GetString($"https://api.live.bilibili.com/room/v1/Danmu/getConf?room_id={RoomId}&platform=pc&player=web");
-                    token = JsonNode.Parse(result)["data"]["token"].ToString();
+                    string token = "";
+                    try
+                    {
+                        var result = await HttpUtil.GetString($"https://api.live.bilibili.com/room/v1/Danmu/getConf?room_id={RoomId}&platform=pc&player=web");
+                        token = JsonNode.Parse(result)["data"]["token"].ToString();
+                    }
+                    catch (Exception) { }
+                    //发送进房信息
+                    var data = EncodeData(JsonSerializer.Serialize(new
+                    {
+                        uid = 0,
+                        roomid = RoomId,
+                        protover = 2,
+                        buvid = System.Guid.NewGuid().ToString(),
+                        platform = "web",
+                        type = 2,
+                        key = token
+                    }), 7);
+                    await WsClient.SendAsync(data, WebSocketMessageType.Binary, true, default);
+                    HeartBeatTimer.Start();
+                    ReceiveMessage();
                 }
-                catch (Exception) { }
-                //发送进房信息
-                var data = EncodeData(JsonSerializer.Serialize(new
+                else
                 {
-                    uid = 0,
-                    roomid = RoomId,
-                    protover = 2,
-                    buvid = System.Guid.NewGuid().ToString(),
-                    platform = "web",
-                    type = 2,
-                    key = token
-                }), 7);
-                await WsClient.SendAsync(data, WebSocketMessageType.Binary, true, default);
-                HeartBeatTimer.Start();
-                ReceiveMessage();
+                    OnClose();
+                }
             }
-            else
+            catch (Exception)
             {
                 OnClose();
             }
@@ -134,14 +141,17 @@ namespace AllLive.Core.Danmaku
             int operation = BitConverter.ToInt32(data.Skip(8).Take(4).Reverse().ToArray(), 0);
             //内容
             var body = data.Skip(16).ToArray();
-            if (operation == 3)
+            if (protocolVersion == 1 || operation == 3)
             {
-                var online = BitConverter.ToInt32(body.Reverse().ToArray(), 0);
-                NewMessageEvent?.Invoke(this, new LiveMessage()
+                var online = BitConverter.ToInt32(body.Take(4).Reverse().ToArray(), 0);
+                if (online > 0)
                 {
-                    Data = online,
-                    Type = LiveMessageType.Online,
-                });
+                    NewMessageEvent?.Invoke(this, new LiveMessage()
+                    {
+                        Data = online,
+                        Type = LiveMessageType.Online,
+                    });
+                }
             }
             else if (operation == 5)
             {

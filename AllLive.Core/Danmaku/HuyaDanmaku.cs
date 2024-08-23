@@ -53,13 +53,13 @@ namespace AllLive.Core.Danmaku
 
         private void ReceiveMessage()
         {
-            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
+            var buffer = new byte[4096];
             while (WsClient.State == WebSocketState.Open)
             {
                 try
                 {
-                    WsClient.ReceiveAsync(buffer, default).Wait();
-                    var stream = new TarsInputStream(buffer.Array);
+                    WsClient.ReceiveAsync(new ArraySegment<byte>(buffer), default).Wait();
+                    var stream = new TarsInputStream(buffer);
                     var type = stream.Read(0, 0, false);
                     if (type == 7)
                     {
@@ -126,16 +126,23 @@ namespace AllLive.Core.Danmaku
         public async Task Start(object args)
         {
             DanmakuArgs = (HuyaDanmakuArgs)args;
-            await WsClient.ConnectAsync(ServerUri, default);
-            if (WsClient.State == WebSocketState.Open)
+            try
             {
-                //发送进房信息
-                await WsClient.SendAsync(JoinData(DanmakuArgs.Ayyuid, DanmakuArgs.TopSid, DanmakuArgs.SubSid), WebSocketMessageType.Binary, true, default);
-                HeartBeatTimer.Start();
-                //ReceiveMessage();
-                ReceiveThread.Start();
+                await WsClient.ConnectAsync(ServerUri, default);
+                if (WsClient.State == WebSocketState.Open)
+                {
+                    //发送进房信息
+                    await WsClient.SendAsync(JoinData(DanmakuArgs.Ayyuid, DanmakuArgs.TopSid, DanmakuArgs.SubSid), WebSocketMessageType.Binary, true, default);
+                    HeartBeatTimer.Start();
+                    ReceiveThread.Start();
+                    //ReceiveMessage();
+                }
+                else
+                {
+                    OnClose();
+                }
             }
-            else
+            catch (Exception)
             {
                 OnClose();
             }

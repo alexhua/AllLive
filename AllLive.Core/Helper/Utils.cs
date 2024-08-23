@@ -40,6 +40,15 @@ namespace AllLive.Core.Helper
             return stringBuilder.ToString();
         }
 
+        /// <summary>
+        /// 解码转义utf8字符串
+        /// </summary>
+        /// <returns></returns>
+        public static string UnEscapeUTF8String(string text)
+        {
+            return Encoding.UTF8.GetString(Encoding.Default.GetBytes(text));
+        }
+
         public static string MatchText(this string input, string pattern, string _default = "0")
         {
             try

@@ -29,8 +29,8 @@ namespace AllLive.UWP.Views
         }
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            favoriteVM.Items.Clear();
             Window.Current.CoreWindow.KeyDown -= CoreWindow_KeyDown;
+            favoriteVM.Items.Clear();
             base.OnNavigatingFrom(e);
         }
 
@@ -55,7 +55,7 @@ namespace AllLive.UWP.Views
             args.Handled = true;
             switch (args.VirtualKey)
             {
-                case Windows.System.VirtualKey.R:
+                case Windows.System.VirtualKey.G:
                     if (!favoriteVM.Loading && favoriteVM.Items.Count != 0)
                     {
                         favoriteVM.Refresh();

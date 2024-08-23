@@ -4,8 +4,10 @@ using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AllLive.Core
@@ -128,31 +130,28 @@ namespace AllLive.Core
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
         {
             Dictionary<string, string> headers = new Dictionary<string, string>();
-            headers.Add("user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 15_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1");
-            var result = await HttpUtil.GetString($"https://m.huya.com/{roomId}", headers);
-            var jsonStr = Regex.Match(result, @"window\.HNF_GLOBAL_INIT.=.\{(.*?)\}.</script>", RegexOptions.Singleline).Groups[1].Value;
-            var jsonObj = JsonNode.Parse($"{{{jsonStr}}}");
-            var title = jsonObj["roomInfo"]["tLiveInfo"]["sRoomName"].ToString();
-            if (string.IsNullOrEmpty(title))
-            {
-                title = jsonObj["roomInfo"]["tLiveInfo"]["sIntroduction"].ToString();
-            }
+            //headers.Add("user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 15_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1");
+            var result = await HttpUtil.GetString($"https://www.huya.com/{roomId}");
+            var jsonStr = Regex.Match(result, @"hyPlayerConfig.=.*stream:.(.*?)\};", RegexOptions.Singleline).Groups[1].Value;
+            //var notice = Regex.Match(result, @"公告 :</em>(.*?)</span>", RegexOptions.Singleline).Groups[1].Value;
+            var stream = JsonNode.Parse(jsonStr);
+            var data = stream["data"].AsArray()[0];
             return new LiveRoomDetail()
             {
-                Cover = jsonObj["roomInfo"]["tLiveInfo"]["sScreenshot"].ToString(),
-                Online = jsonObj["roomInfo"]["tLiveInfo"]["lTotalCount"].ToInt32(),
-                RoomID = jsonObj["roomInfo"]["tLiveInfo"]["lProfileRoom"].ToString(),
-                Title = title,
-                UserName = jsonObj["roomInfo"]["tProfileInfo"]["sNick"].ToString(),
-                UserAvatar = jsonObj["roomInfo"]["tProfileInfo"]["sAvatar180"].ToString(),
-                Introduction = jsonObj["roomInfo"]["tLiveInfo"]["sIntroduction"].ToString(),
-                Notice = jsonObj["welcomeText"].ToString(),
-                Status = jsonObj["roomInfo"]["eLiveStatus"].ToInt32() == 2,
-                Data = jsonObj["roomInfo"]["tLiveInfo"]["tLiveStreamInfo"],
+                Cover = data["gameLiveInfo"]["screenshot"].ToString(),
+                Online = data["gameLiveInfo"]["totalCount"].ToInt32(),
+                RoomID = data["gameLiveInfo"]["profileRoom"].ToString(),
+                Title = data["gameLiveInfo"]["introduction"].ToString(),
+                UserName = data["gameLiveInfo"]["nick"].ToString(),
+                UserAvatar = data["gameLiveInfo"]["avatar180"].ToString(),
+                Introduction = data["gameLiveInfo"]["introduction"].ToString(),
+                //Notice = notice,
+                Status = stream["iWebDefaultBitRate"].ToInt32() > 0,
+                Data = stream,
                 DanmakuData = new HuyaDanmakuArgs(
-                    jsonObj["roomInfo"]["tLiveInfo"]["lYyid"].ToInt64(),
-                    result.MatchText(@"lChannelId"":([0-9]+)").ToInt64(),
-                    result.MatchText(@"lSubChannelId"":([0-9]+)").ToInt64()
+                    data["gameLiveInfo"]["yyid"].ToInt64(),
+                    data["gameLiveInfo"]["liveChannel"].ToInt64(),
+                    data["gameLiveInfo"]["channel"].ToInt64()
                 ),
                 Url = "https://www.huya.com/" + roomId
             };
@@ -199,12 +198,12 @@ namespace AllLive.Core
             long seqid = uid + timestamp;
             string s = Utils.ToMD5($"{seqid}|{ctype}|{t}");
             string wsSecret = Utils.ToMD5($"{fm}_{uid}_{StreamName}_{s}_{wsTime}");
-            return $"wsSecret={wsSecret}&wsTime={wsTime}&seqid={seqid}&uid={uid}&uuid={uuid}";
+            return $"wsSecret={wsSecret}&wsTime={wsTime}&seqid={seqid}&ctype={ctype}&t={t}&uid={uid}&uuid={uuid}";
         }
         private string PickupUrlParams(params string[] antiCodes)
         {
             string result = "ver=1";
-            for (int i = 3; i < antiCodes.Length; i++)
+            for (int i = 4; i < antiCodes.Length; i++)
             {
                 result += '&' + antiCodes[i];
             }
@@ -213,9 +212,9 @@ namespace AllLive.Core
         public Task<List<LivePlayQuality>> GetPlayQuality(LiveRoomDetail roomDetail)
         {
             JsonNode liveStreamInfo = roomDetail.Data as JsonNode;
-            var streamRatio = liveStreamInfo["mStreamRatio"]["value"];
+            var data = liveStreamInfo["data"].AsArray()[0];
             List<LivePlayQuality> qualities = new List<LivePlayQuality>();
-            foreach (JsonNode bitRateInfo in liveStreamInfo["vBitRateInfo"]["value"].AsArray())
+            foreach (JsonNode bitRateInfo in liveStreamInfo["vMultiStreamInfo"].AsArray())
             {   /* Flv */
                 var quality = new LivePlayQuality()
                 {
@@ -223,17 +222,17 @@ namespace AllLive.Core
                     Data = new List<string>(),
                     LineNames = new List<string>()
                 };
-                foreach (JsonNode streamInfo in liveStreamInfo["vStreamInfo"]["value"].AsArray())
+                foreach (JsonNode lineInfo in data["gameStreamInfoList"].AsArray().Skip(1))
                 {
-                    var cdnType = streamInfo["sCdnType"].ToString();
-                    if (streamRatio[cdnType].ToInt32() < 0) continue; //可能为无效线路
-                    var lineName = streamInfo["iLineIndex"].ToInt32() == 0 ? "" : $"线路{streamInfo["iLineIndex"].ToInt32()}";
+                    var lineName = $"线路{lineInfo["iLineIndex"].ToInt32()}";
+                    var lineOrigin = lineInfo["sFlvUrl"].ToString().Replace("http", "https");
+                    var bitRatio = bitRateInfo["iBitRate"].ToString();
+                    var ratioParam = bitRatio == "0" ? "" : $"ratio={bitRatio}&";
                     quality.LineNames.Add(lineName);
-                    ((List<string>)quality.Data).Add(
-                        $"{streamInfo["sFlvUrl"]}/{streamInfo["sStreamName"]}.{streamInfo["sFlvUrlSuffix"]}?" +
-                        $"{GenerateWsSecret(streamInfo["sStreamName"].ToString())}&ratio={bitRateInfo["iBitRate"]}&" +
-                        PickupUrlParams(streamInfo["sFlvAntiCode"].ToString().Split('&'))
-                    );
+                    ((List<string>)quality.Data).Add($"{lineOrigin}/{lineInfo["sStreamName"]}.{lineInfo["sFlvUrlSuffix"]}?" +
+                        $"{GenerateWsSecret(lineInfo["sStreamName"].ToString())}&" + ratioParam +
+                        PickupUrlParams(lineInfo["sFlvAntiCode"].ToString().Split('&'))
+                        );
                 }
                 qualities.Add(quality);
                 ///* Hls */

@@ -317,7 +317,7 @@ namespace AllLive.UWP.ViewModels
                 }
                 if (e.Type == LiveMessageType.Chat)
                 {
-                    if (Messages.Count >= MessageCleanCount)
+                    while (Messages.Count >= MessageCleanCount)
                     {
                         Messages.RemoveAt(0);
                         //Messages.Clear();

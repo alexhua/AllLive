@@ -41,7 +41,6 @@ namespace AllLive.UWP.Views
             {
                 this.NavigationCacheMode = NavigationCacheMode.Disabled;
             }
-            searchVM.Items.Clear();
             base.OnNavigatedFrom(e);
         }
         private void btnBack_Click(object sender, RoutedEventArgs e)
