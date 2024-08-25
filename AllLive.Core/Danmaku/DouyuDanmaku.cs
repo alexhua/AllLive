@@ -2,7 +2,6 @@
 using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;

@@ -4,14 +4,13 @@ using AllLive.UWP.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Windows.Input;
-using Windows.Storage.Pickers;
-using Windows.Storage;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Windows.UI.Popups;
 using System.Threading.Tasks;
-using System.Linq;
+using System.Windows.Input;
+using Windows.Storage;
+using Windows.Storage.Pickers;
+using Windows.UI.Popups;
 
 namespace AllLive.UWP.ViewModels
 {

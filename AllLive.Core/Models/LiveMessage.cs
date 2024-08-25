@@ -1,8 +1,5 @@
 ﻿using AllLive.Core.Helper;
 using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Text;
 
 namespace AllLive.Core.Models
 {
@@ -47,7 +44,7 @@ namespace AllLive.Core.Models
         /// <summary>
         /// 弹幕颜色
         /// </summary>
-        public DanmakuColor Color { get; set; }= DanmakuColor.White;
+        public DanmakuColor Color { get; set; } = DanmakuColor.White;
     }
 
     public class LiveSuperChatMessage

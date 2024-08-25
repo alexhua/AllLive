@@ -1,6 +1,5 @@
 ﻿using AllLive.Core.Interface;
 using AllLive.UWP.Helper;
-using System;
 using System.Collections.Generic;
 
 namespace AllLive.UWP.ViewModels

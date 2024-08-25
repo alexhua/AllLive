@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace AllLive.Core.Helper
 {
@@ -10,7 +8,7 @@ namespace AllLive.Core.Helper
         public byte G { get; set; }
         public byte B { get; set; }
         public byte A { get; set; } = 255;
-       
+
         public DanmakuColor(byte r, byte g, byte b)
         {
             R = r;
@@ -79,7 +77,7 @@ namespace AllLive.Core.Helper
                 return $"#{R:X2}{G:X2}{B:X2}{A:X2}";
             }
         }
-       
+
         public static DanmakuColor White { get; } = new DanmakuColor(255, 255, 255);
         public static DanmakuColor Black { get; } = new DanmakuColor(0, 0, 0);
         public static DanmakuColor Red { get; } = new DanmakuColor(255, 0, 0);

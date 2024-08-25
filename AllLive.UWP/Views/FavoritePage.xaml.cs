@@ -1,7 +1,6 @@
 ﻿using AllLive.UWP.Helper;
 using AllLive.UWP.Models;
 using AllLive.UWP.ViewModels;
-using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Linq;
 using Windows.UI.Xaml;
@@ -37,7 +36,7 @@ namespace AllLive.UWP.Views
         {
             base.OnNavigatedTo(e);
 
-            if(favoriteVM.Items.Count==0)
+            if (favoriteVM.Items.Count == 0)
             {
                 favoriteVM.LoadData();
             }

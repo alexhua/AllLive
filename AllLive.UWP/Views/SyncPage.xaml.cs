@@ -2,18 +2,8 @@
 using AllLive.UWP.Helper;
 using AllLive.UWP.ViewModels;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 
 // https://go.microsoft.com/fwlink/?LinkId=234238 上介绍了“空白页”项模板
@@ -41,17 +31,17 @@ namespace AllLive.UWP.Views
 
         private async void btnJoinRoom_Click(object sender, RoutedEventArgs e)
         {
-            ContentDialog dialog= new ContentDialog();
+            ContentDialog dialog = new ContentDialog();
             dialog.Title = "加入房间";
             TextBox textBox = new TextBox();
             textBox.PlaceholderText = "请输入房间号";
             dialog.Content = textBox;
             dialog.PrimaryButtonText = "加入";
             dialog.SecondaryButtonText = "取消";
-            dialog.PrimaryButtonClick +=  (s, a) =>
+            dialog.PrimaryButtonClick += (s, a) =>
             {
                 a.Cancel = true;
-                if(string.IsNullOrEmpty(textBox.Text)||textBox.Text.Length!=5)
+                if (string.IsNullOrEmpty(textBox.Text) || textBox.Text.Length != 5)
                 {
                     Utils.ShowMessageToast("请输入5位房间号");
                     return;
@@ -67,13 +57,14 @@ namespace AllLive.UWP.Views
             ContentDialog dialog = new ContentDialog()
             {
                 Title = "二维码",
-                IsSecondaryButtonEnabled=false,
+                IsSecondaryButtonEnabled = false,
                 PrimaryButtonText = "关闭"
             };
-          
-            Image image = new Image() { 
-                Width=260,
-                Height=260
+
+            Image image = new Image()
+            {
+                Width = 260,
+                Height = 260
             };
             // 创建二维码
             var qrCode = new ZXing.BarcodeWriter

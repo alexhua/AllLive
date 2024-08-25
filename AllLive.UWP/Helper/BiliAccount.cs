@@ -5,7 +5,6 @@ using NSDanmaku;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
@@ -29,12 +28,13 @@ namespace AllLive.UWP.Helper
         }
         public bool Logined { get; set; } = false;
         public string UserName { get; set; } = "";
-        public long UserId {
+        public long UserId
+        {
             get
             {
                 return SettingHelper.GetValue<long>(SettingHelper.BILI_USER_ID, 0L);
             }
-        } 
+        }
         public string Cookie
         {
             get
@@ -52,7 +52,7 @@ namespace AllLive.UWP.Helper
                 SetBiliSiteCookie();
                 await LoadUserInfo();
             }
-           
+
 
         }
 
@@ -75,7 +75,7 @@ namespace AllLive.UWP.Helper
                     UserName = json["data"]["uname"].ToString();
 
                     SettingHelper.SetValue(SettingHelper.BILI_USER_ID, json["data"]["mid"].ToDouble());
-                   
+
                     Logined = true;
                     SetBiliSiteCookie();
                     OnAccountChanged?.Invoke(this, null);
@@ -107,7 +107,7 @@ namespace AllLive.UWP.Helper
             SettingHelper.SetValue(SettingHelper.BILI_COOKIE, "");
             SettingHelper.SetValue(SettingHelper.BILI_USER_ID, 0L);
             UserName = "";
-           
+
             SetBiliSiteCookie();
             OnAccountChanged?.Invoke(this, null);
         }

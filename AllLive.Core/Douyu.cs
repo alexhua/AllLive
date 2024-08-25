@@ -1,16 +1,14 @@
-﻿using AllLive.Core.Interface;
-using AllLive.Core.Models;
-using AllLive.Core.Danmaku;
+﻿using AllLive.Core.Danmaku;
 using AllLive.Core.Helper;
+using AllLive.Core.Interface;
+using AllLive.Core.Models;
 using Jint;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-
-using System.Xml.Linq;
-using System.Linq;
 
 /*
 * 参考：
@@ -44,7 +42,7 @@ namespace AllLive.Core
                         Name = element["cate2Name"].ToString(),
                     });
                 });
-               
+
                 categories.Add(
                   new LiveCategory()
                   {
@@ -59,7 +57,7 @@ namespace AllLive.Core
             return categories;
         }
 
-      
+
         public async Task<LiveCategoryResult> GetCategoryRooms(LiveSubCategory category, int page = 1)
         {
             LiveCategoryResult categoryResult = new LiveCategoryResult()
@@ -117,7 +115,7 @@ namespace AllLive.Core
                 { "user-agent","Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1 Edg/114.0.0.0" },
             });
             var crptext = JsonNode.Parse(jsEncResult)["data"][$"room{roomId}"].ToString();
-           
+
 
             return new LiveRoomDetail()
             {
@@ -127,13 +125,13 @@ namespace AllLive.Core
                 Title = roomInfo["room_name"].ToString(),
                 UserName = roomInfo["owner_name"].ToString(),
                 UserAvatar = roomInfo["owner_avatar"].ToString(),
-                Introduction =roomInfo["show_details"].ToString(),
+                Introduction = roomInfo["show_details"].ToString(),
                 Notice = "",
                 Status = roomInfo["show_status"].ToInt32() == 1 && roomInfo["videoLoop"].ToInt32() != 1,
                 DanmakuData = roomInfo["room_id"].ToString(),
                 Data = GetPlayArgs(crptext, roomInfo["room_id"].ToString()),
                 Url = "https://www.douyu.com/" + roomId,
-                IsRecord= roomInfo["videoLoop"].ToInt32() == 1,
+                IsRecord = roomInfo["videoLoop"].ToInt32() == 1,
             };
         }
 

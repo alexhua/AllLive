@@ -32,7 +32,7 @@ namespace AllLive.UWP.Views
                 SettingsAutoClean.Visibility = Visibility.Collapsed;
                 SettingsXboxMode.Visibility = Visibility.Visible;
             }
-            BiliAccount.Instance.OnAccountChanged += BiliAccount_OnAccountChanged; 
+            BiliAccount.Instance.OnAccountChanged += BiliAccount_OnAccountChanged;
             LoadUI();
 
         }
@@ -167,13 +167,13 @@ namespace AllLive.UWP.Views
             LiveDanmuSettingListWords.ItemsSource = settingVM.ShieldWords;
 
 
-            if(BiliAccount.Instance.Logined)
+            if (BiliAccount.Instance.Logined)
             {
                 txtBili.Text = $"已登录：{BiliAccount.Instance.UserName}";
                 BtnLoginBili.Visibility = Visibility.Collapsed;
                 BtnLogoutBili.Visibility = Visibility.Visible;
             }
-           
+
         }
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
@@ -223,7 +223,7 @@ namespace AllLive.UWP.Views
                 Utils.ShowMessageToast("已登录");
                 return;
             }
-            var result= await MessageCenter.BiliBiliLogin();
+            var result = await MessageCenter.BiliBiliLogin();
             if (result)
             {
                 txtBili.Text = $"已登录：{BiliAccount.Instance.UserName}";

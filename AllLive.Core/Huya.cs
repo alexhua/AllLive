@@ -4,13 +4,13 @@ using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace AllLive.Core
 {
@@ -188,10 +188,10 @@ namespace AllLive.Core
                     Name = item["sDisplayName"].ToString(),
                 });
             }
-            var realRoomId= jsonObj["roomInfo"]["tLiveInfo"]["lProfileRoom"].ToInt32();
+            var realRoomId = jsonObj["roomInfo"]["tLiveInfo"]["lProfileRoom"].ToInt32();
             if (realRoomId == 0)
             {
-               realRoomId = jsonObj["roomInfo"]["tProfileInfo"]["lProfileRoom"].ToInt32();
+                realRoomId = jsonObj["roomInfo"]["tProfileInfo"]["lProfileRoom"].ToInt32();
             }
 
             return new LiveRoomDetail()
@@ -237,8 +237,8 @@ namespace AllLive.Core
             var topSid = result.MatchText(@"lChannelId"":([0-9]+)").ToInt64();
             var subSid = result.MatchText(@"lSubChannelId"":([0-9]+)").ToInt64();
 
-            jsonObj["topSid"]=topSid;
-            jsonObj["subSid"]=subSid;
+            jsonObj["topSid"] = topSid;
+            jsonObj["subSid"] = subSid;
 
             return jsonObj;
         }

@@ -1,24 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Collections.ObjectModel;
-using Microsoft.AspNetCore.SignalR.Client;
-using AllLive.UWP.Helper;
-using System.Data.Common;
-using System.Data;
-using Microsoft.Toolkit.Uwp.Helpers;
-using AllLive.Core.Danmaku.Proto;
-using Windows.UI.Xaml;
-using Windows.UI.Core;
-using System.Timers;
-using Windows.UI.Popups;
+﻿using AllLive.UWP.Helper;
 using AllLive.UWP.Models;
-using Windows.System;
-using ProtoBuf;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Toolkit.Uwp.Helpers;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using System.Timers;
+using Windows.UI.Core;
+using Windows.UI.Popups;
 
 namespace AllLive.UWP.ViewModels
 {
@@ -202,7 +195,7 @@ namespace AllLive.UWP.ViewModels
         private void ReceiveShieldWord(bool overlay, string content)
         {
             var currentWords = JsonSerializer.Deserialize<List<string>>(SettingHelper.GetValue<string>(SettingHelper.LiveDanmaku.SHIELD_WORD, "[]"));
-            if(overlay)
+            if (overlay)
             {
                 currentWords.Clear();
             }
@@ -219,16 +212,16 @@ namespace AllLive.UWP.ViewModels
 
         }
 
-        private  void ReceiveBiliBili(bool overlay, string content)
+        private void ReceiveBiliBili(bool overlay, string content)
         {
             var obj = JsonNode.Parse(content);
             var cookie = obj["cookie"];
             SettingHelper.SetValue(SettingHelper.BILI_COOKIE, cookie);
-            _=Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+            _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
             {
                 await BiliAccount.Instance.LoadUserInfo();
             });
-          
+
             ShowMessage("已同步哔哩哔哩账号");
         }
 
@@ -472,16 +465,17 @@ namespace AllLive.UWP.ViewModels
                 return;
             }
 
-           
+
             var cookie = SettingHelper.GetValue<string>(SettingHelper.BILI_COOKIE, "");
             if (cookie == "")
             {
                 ShowMessage("未登录哔哩哔哩账号");
                 return;
             }
-         
-            var resp = await connection?.InvokeAsync<Resp<int>>("SendBiliAccount", RoomID, true, JsonSerializer.Serialize(new { 
-                cookie= cookie
+
+            var resp = await connection?.InvokeAsync<Resp<int>>("SendBiliAccount", RoomID, true, JsonSerializer.Serialize(new
+            {
+                cookie = cookie
             }));
             if (resp.IsSuccess)
             {

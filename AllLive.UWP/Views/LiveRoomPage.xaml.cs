@@ -1,39 +1,30 @@
-﻿using AllLive.UWP.Models;
+﻿using AllLive.Core.Models;
+using AllLive.UWP.Helper;
+using AllLive.UWP.Models;
 using AllLive.UWP.ViewModels;
+using FFmpegInteropX;
+using Microsoft.UI.Xaml.Controls;
+using NSDanmaku.Model;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
+using Windows.Graphics.Display;
+using Windows.Graphics.Imaging;
+using Windows.Media.Playback;
+using Windows.Storage;
+using Windows.System.Display;
+using Windows.UI;
+using Windows.UI.Popups;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
-using AllLive.Core.Models;
-using AllLive.UWP.Helper;
-using Microsoft.UI.Xaml.Controls;
-using NSDanmaku.Model;
-using Windows.UI.ViewManagement;
-using Windows.UI.Popups;
-using Windows.System.Display;
-using System.Threading.Tasks;
-using Windows.Storage;
-using Windows.Graphics.Imaging;
 using Windows.UI.Xaml.Media.Imaging;
-using Windows.Graphics.Display;
-using Windows.UI;
-using Windows.ApplicationModel.Core;
-using System.Diagnostics;
-using System.Text.Json;
-using Windows.UI.Core;
-using FFmpegInteropX;
-using Windows.Media.Playback;
-using System.Text;
+using Windows.UI.Xaml.Navigation;
 // https://go.microsoft.com/fwlink/?LinkId=234238 上介绍了“空白页”项模板
 
 namespace AllLive.UWP.Views
@@ -82,7 +73,7 @@ namespace AllLive.UWP.Views
 
             timer_focus.Start();
             controlTimer.Start();
-            if (Utils.IsXbox&& SettingHelper.GetValue<int>(SettingHelper.XBOX_MODE, 0) == 0)
+            if (Utils.IsXbox && SettingHelper.GetValue<int>(SettingHelper.XBOX_MODE, 0) == 0)
             {
                 XBoxControl.Visibility = Visibility.Visible;
                 StandardControl.Visibility = Visibility.Collapsed;
@@ -93,7 +84,7 @@ namespace AllLive.UWP.Views
                 ClearXboxSettingBind();
                 StandardControl.Visibility = Visibility.Visible;
             }
-         
+
 
         }
 
@@ -163,9 +154,9 @@ namespace AllLive.UWP.Views
 
         private async void MediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
         {
-            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal,  () =>
+            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
             {
-               
+
                 PlayError();
             });
 
@@ -275,7 +266,7 @@ namespace AllLive.UWP.Views
                 }
                 if (args.VirtualKey == Windows.System.VirtualKey.GamepadB)
                 {
-                    if (XboxSuperChat.Visibility==Visibility.Visible)
+                    if (XboxSuperChat.Visibility == Visibility.Visible)
                     {
                         XBoxSplitView.IsPaneOpen = false;
                     }
@@ -378,7 +369,7 @@ namespace AllLive.UWP.Views
                     liveRoomVM?.Stop();
                     liveRoomVM.LoadData(pageArgs.Site, liveRoomVM.RoomID);
                     break;
-                 case Windows.System.VirtualKey.GamepadA:
+                case Windows.System.VirtualKey.GamepadA:
                     ShowControl(control.Visibility == Visibility.Collapsed);
                     break;
                 case Windows.System.VirtualKey.GamepadMenu:
@@ -389,7 +380,7 @@ namespace AllLive.UWP.Views
                     break;
                 case Windows.System.VirtualKey.GamepadLeftTrigger:
                     //刷新直播间
-                    BottomBtnRefresh_Click(this,null);
+                    BottomBtnRefresh_Click(this, null);
                     break;
                 case Windows.System.VirtualKey.GamepadB:
                     //退出直播间
@@ -404,7 +395,7 @@ namespace AllLive.UWP.Views
                 case Windows.System.VirtualKey.B:
                 case Windows.System.VirtualKey.GamepadRightTrigger:
                     //关注/取消关注
-                    if(liveRoomVM.IsFavorite)
+                    if (liveRoomVM.IsFavorite)
                     {
                         liveRoomVM.RemoveFavoriteCommand.Execute(null);
                         Utils.ShowMessageToast("已取消关注");
@@ -414,7 +405,7 @@ namespace AllLive.UWP.Views
                         liveRoomVM.AddFavoriteCommand.Execute(null);
                         Utils.ShowMessageToast("已添加关注");
                     }
-                  
+
                     break;
                 default:
                     break;
@@ -484,7 +475,7 @@ namespace AllLive.UWP.Views
                     PlayError();
                     return;
                 }
-              
+
                 mediaPlayer.AutoPlay = true;
                 mediaPlayer.Volume = SliderVolume.Value;
                 mediaPlayer.Source = interopMSS.CreateMediaPlaybackItem();
@@ -613,14 +604,14 @@ namespace AllLive.UWP.Views
                 {
                     LoadSetting();
                 }
-                
+
                 var siteInfo = MainVM.Sites.FirstOrDefault(x => x.LiveSite.Equals(pageArgs.Site));
                 liveRoomVM.SiteLogo = siteInfo.Logo;
                 liveRoomVM.SiteName = siteInfo.Name;
 
                 var data = pageArgs.Data as LiveRoomItem;
                 MessageCenter.ChangeTitle("", pageArgs.Site);
-                
+
                 liveRoomVM.LoadData(pageArgs.Site, data.RoomID);
 
                 // 如果是XBOX，自动进入全屏
@@ -724,7 +715,7 @@ namespace AllLive.UWP.Views
             //        Utils.ShowMessageToast("更改清晰度或刷新后生效");
             //    });
             //});
-            cbDecoder.SelectedIndex = SettingHelper.GetValue<int>(SettingHelper.VIDEO_DECODER, Utils.IsXbox?1: 0);
+            cbDecoder.SelectedIndex = SettingHelper.GetValue<int>(SettingHelper.VIDEO_DECODER, Utils.IsXbox ? 1 : 0);
             cbDecoder.Loaded += new RoutedEventHandler((sender, e) =>
             {
                 cbDecoder.SelectionChanged += new SelectionChangedEventHandler((obj, args) =>
@@ -748,7 +739,7 @@ namespace AllLive.UWP.Views
             });
 
             // 保留醒目留言
-            var keepSC= SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.KEEP_SUPER_CHAT, true);
+            var keepSC = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.KEEP_SUPER_CHAT, true);
             swKeepSC.IsOn = keepSC;
             liveRoomVM.SetSCTimer();
             swKeepSC.Toggled += new RoutedEventHandler((e, args) =>
@@ -816,7 +807,7 @@ namespace AllLive.UWP.Views
                 if (isMini) return;
                 SettingHelper.SetValue<double>(SettingHelper.LiveDanmaku.SPEED, DanmuSettingSpeed.Value);
             });
-          
+
             //保留一位小数
             DanmuControl.Opacity = SettingHelper.GetValue<double>(SettingHelper.LiveDanmaku.OPACITY, 1.0);
             DanmuSettingOpacity.ValueChanged += new RangeBaseValueChangedEventHandler((e, args) =>
@@ -874,7 +865,7 @@ namespace AllLive.UWP.Views
 
             //弹幕开关
             var state = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.SHOW, true) ? Visibility.Visible : Visibility.Collapsed;
-          
+
             PlaySWDanmu.IsOn = state == Visibility.Visible;
             PlaySWDanmu.Toggled += new RoutedEventHandler((e, args) =>
             {
@@ -1032,12 +1023,12 @@ namespace AllLive.UWP.Views
         }
         private void Grid_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
-            if(isMini)
+            if (isMini)
             {
                 MiniWidnows(false);
                 return;
             }
-           
+
             if (PlayBtnFullScreen.Visibility == Visibility.Visible)
             {
                 PlayBtnFullScreen_Click(sender, null);
@@ -1199,7 +1190,7 @@ namespace AllLive.UWP.Views
 
                 ColumnRight.Width = new GridLength(0, GridUnitType.Pixel);
                 ColumnRight.MinWidth = 0;
-              
+
                 BottomInfo.Height = new GridLength(0, GridUnitType.Pixel);
                 SetFullWindow(true);
                 //全屏
@@ -1241,7 +1232,7 @@ namespace AllLive.UWP.Views
                 {
                     StandardControl.Visibility = Visibility.Collapsed;
                 }
-             
+
                 MiniControl.Visibility = Visibility.Visible;
 
                 if (ApplicationView.GetForCurrentView().IsViewModeSupported(ApplicationViewMode.CompactOverlay))
@@ -1265,7 +1256,7 @@ namespace AllLive.UWP.Views
                 {
                     StandardControl.Visibility = Visibility.Visible;
                 }
-               
+
                 MiniControl.Visibility = Visibility.Collapsed;
                 await ApplicationView.GetForCurrentView().TryEnterViewModeAsync(ApplicationViewMode.Default);
                 DanmuControl.DanmakuSizeZoom = SettingHelper.GetValue<double>(SettingHelper.LiveDanmaku.FONT_ZOOM, 1);
@@ -1360,7 +1351,7 @@ namespace AllLive.UWP.Views
                 IsSecondaryButtonEnabled = false,
                 PrimaryButtonText = "确定"
             };
-            _=dialog.ShowAsync();
+            _ = dialog.ShowAsync();
         }
     }
 }

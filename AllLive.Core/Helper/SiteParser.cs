@@ -1,25 +1,25 @@
-﻿using System;
-using System.Threading.Tasks;
-using AllLive.Core.Helper;
-using System.Text.RegularExpressions;
+﻿using AllLive.Core.Helper;
+using System;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace AllLive.UWP.Helper
 {
     public enum LiveSite
     {
-        Bilibili=0,
-        Douyu=1,
-        Huya=2,
-        Douyin=3,
-        Unknown=99,
+        Bilibili = 0,
+        Douyu = 1,
+        Huya = 2,
+        Douyin = 3,
+        Unknown = 99,
     }
     public class SiteParser
     {
-       
+
         public static async Task<(LiveSite, string)> ParseUrl(string url)
         {
-            LiveSite site= LiveSite.Unknown;
+            LiveSite site = LiveSite.Unknown;
             var roomId = "";
             if (url.Contains("bilibili.com"))
             {
@@ -77,7 +77,7 @@ namespace AllLive.UWP.Helper
                 {
                     return headResp.Headers.Location.ToString();
                 }
-              
+
             }
             catch (Exception ex)
             {

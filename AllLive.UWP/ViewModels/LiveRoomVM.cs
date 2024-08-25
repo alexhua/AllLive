@@ -1,14 +1,14 @@
 ﻿using AllLive.Core.Interface;
 using AllLive.Core.Models;
+using AllLive.UWP.Helper;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Windows.UI.Core;
-using AllLive.UWP.Helper;
-using System.Windows.Input;
 using System.ComponentModel;
-using System.Timers;
 using System.Linq;
+using System.Timers;
+using System.Windows.Input;
+using Windows.UI.Core;
 
 namespace AllLive.UWP.ViewModels
 {
@@ -295,13 +295,13 @@ namespace AllLive.UWP.ViewModels
             KeepSC = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.KEEP_SUPER_CHAT, true);
             if (KeepSC)
             {
-               _= Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-                {
-                    foreach (var item in SuperChatMessages)
-                    {
-                        item.ShowCountdown = false;
-                    }
-                });
+                _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                 {
+                     foreach (var item in SuperChatMessages)
+                     {
+                         item.ShowCountdown = false;
+                     }
+                 });
                 scTimer?.Stop();
                 scTimer?.Dispose();
                 scTimer = null;
@@ -331,7 +331,7 @@ namespace AllLive.UWP.ViewModels
                             }
                         }
                     });
-                    
+
                 };
                 scTimer.Start();
             }
@@ -387,7 +387,7 @@ namespace AllLive.UWP.ViewModels
                         Url = data[i]
                     });
                 }
-              
+
                 Lines = ls;
                 CurrentLine = Lines[0];
             }
@@ -402,7 +402,7 @@ namespace AllLive.UWP.ViewModels
             try
             {
                 var data = await Site.GetSuperChatMessages(RoomID);
-                if (data.Count>0)
+                if (data.Count > 0)
                 {
                     foreach (var item in data)
                     {
@@ -503,7 +503,7 @@ namespace AllLive.UWP.ViewModels
 
     public class SuperChatItem : LiveSuperChatMessage, INotifyPropertyChanged
     {
-        public SuperChatItem(LiveSuperChatMessage message,bool showCountdown)
+        public SuperChatItem(LiveSuperChatMessage message, bool showCountdown)
         {
             UserName = message.UserName;
             Face = message.Face;
@@ -513,7 +513,7 @@ namespace AllLive.UWP.ViewModels
             EndTime = message.EndTime;
             BackgroundColor = message.BackgroundColor;
             BackgroundBottomColor = message.BackgroundBottomColor;
-            CountdownTime=Convert.ToInt32(EndTime.Subtract(DateTime.Now).TotalSeconds);
+            CountdownTime = Convert.ToInt32(EndTime.Subtract(DateTime.Now).TotalSeconds);
             ShowCountdown = showCountdown;
         }
         public event PropertyChangedEventHandler PropertyChanged;
@@ -536,12 +536,12 @@ namespace AllLive.UWP.ViewModels
             }
         }
 
-        private bool showCountdown=false;
+        private bool showCountdown = false;
 
         public bool ShowCountdown
         {
             get { return showCountdown; }
-            set { showCountdown=value; DoPropertyChanged("ShowCountdown"); }
+            set { showCountdown = value; DoPropertyChanged("ShowCountdown"); }
         }
     }
 }

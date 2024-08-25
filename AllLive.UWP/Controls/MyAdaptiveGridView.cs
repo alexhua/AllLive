@@ -53,7 +53,8 @@ namespace AllLive.UWP.Controls
         {
             scrollViewer = GetTemplateChild("ScrollViewer") as ScrollViewer;
             scrollViewer.ViewChanged += ScrollViewer_ViewChanged;
-            this.RegisterPropertyChangedCallback(DataLoadingProperty, new DependencyPropertyChangedCallback((obj, e) => {
+            this.RegisterPropertyChangedCallback(DataLoadingProperty, new DependencyPropertyChangedCallback((obj, e) =>
+            {
                 if (!DataLoading)
                 {
                     if (scrollViewer.ScrollableHeight == 0)

@@ -10,7 +10,7 @@ namespace AllLive.UWP.Helper
             if (storageHelper.KeyExists(key))
             {
                 var value = storageHelper.Read<T>(key);
-                return value==null?_default:value;
+                return value == null ? _default : value;
             }
             else
             {

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -126,7 +125,7 @@ namespace AllLive.Core
                     Title = item["room"]["title"].ToString(),
                     Cover = item["room"]["cover"]["url_list"][0].ToString(),
                     UserName = item["room"]["owner"]["nickname"].ToString(),
-                    Online = item["room"]["room_view_stats"]?["display_value"]?.ToInt32()??0,
+                    Online = item["room"]["room_view_stats"]?["display_value"]?.ToInt32() ?? 0,
                 };
                 items.Add(roomItem);
             }
@@ -162,7 +161,7 @@ namespace AllLive.Core
                     Title = item["room"]["title"].ToString(),
                     Cover = item["room"]["cover"]["url_list"][0].ToString(),
                     UserName = item["room"]["owner"]["nickname"].ToString(),
-                    Online = item["room"]["room_view_stats"]?["display_value"]?.ToInt32()??0,
+                    Online = item["room"]["room_view_stats"]?["display_value"]?.ToInt32() ?? 0,
                 };
                 items.Add(roomItem);
             }
@@ -226,7 +225,7 @@ namespace AllLive.Core
                 UserName = owner["nickname"].ToString(),
                 UserAvatar = owner["avatar_thumb"]["url_list"][0].ToString(),
                 Online = roomStatus
-                  ? (room["room_view_stats"]?["display_value"]?.ToInt32()??0)
+                  ? (room["room_view_stats"]?["display_value"]?.ToInt32() ?? 0)
                   : 0,
                 Status = roomStatus,
                 Url = $"https://live.douyin.com/{webRid}",
@@ -299,7 +298,7 @@ namespace AllLive.Core
                     ? owner["avatar_thumb"]["url_list"][0].ToString()
                     : userData["avatar_thumb"]["url_list"][0].ToString(),
                 Online = roomStatus
-                    ? (roomData["room_view_stats"]?["display_value"]?.ToInt32()??0)
+                    ? (roomData["room_view_stats"]?["display_value"]?.ToInt32() ?? 0)
                     : 0,
                 Status = roomStatus,
                 Url = $"https://live.douyin.com/{webRid}",
@@ -343,7 +342,7 @@ namespace AllLive.Core
                     ? owner["avatar_thumb"]["url_list"][0].ToString()
                     : anchor["avatar_thumb"]["url_list"][0].ToString(),
                 Online = roomStatus
-                    ? (room["room_view_stats"]?["display_value"]?.ToInt32()??0)
+                    ? (room["room_view_stats"]?["display_value"]?.ToInt32() ?? 0)
                     : 0,
                 Status = roomStatus,
                 Url = $"https://live.douyin.com/{webRid}",
@@ -592,9 +591,9 @@ namespace AllLive.Core
             {
                 { "accept", "application/json, text/plain, */*" },
                 { "accept-language", "zh-CN,zh;q=0.9,en;q=0.8" },
-                { "cookie", cookie },  
+                { "cookie", cookie },
                 { "priority", "u=1, i" },
-                { "referer", $"https://www.douyin.com/search/{Uri.EscapeUriString(keyword)}?type=live" }, 
+                { "referer", $"https://www.douyin.com/search/{Uri.EscapeUriString(keyword)}?type=live" },
                 { "sec-ch-ua", "\"Microsoft Edge\";v=\"125\", \"Chromium\";v=\"125\", \"Not.A/Brand\";v=\"24\"" },
                 { "sec-ch-ua-mobile", "?0" },
                 { "sec-ch-ua-platform", "\"Windows\"" },
@@ -605,7 +604,7 @@ namespace AllLive.Core
             };
             var resp = await HttpUtil.GetString(requestUrl, headers);
             var json = JsonNode.Parse(resp);
-            var items =new List<LiveRoomItem>();
+            var items = new List<LiveRoomItem>();
             foreach (var item in json["data"].AsArray())
             {
                 var itemData = JsonNode.Parse(item["lives"]["rawdata"].ToString());

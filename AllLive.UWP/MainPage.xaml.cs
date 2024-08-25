@@ -1,17 +1,17 @@
-﻿using AllLive.UWP.Helper;
+﻿using AllLive.Core.Models;
+using AllLive.UWP.Helper;
 using AllLive.UWP.Models;
 using AllLive.UWP.ViewModels;
 using AllLive.UWP.Views;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Windows.Services.Store;
+using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Navigation;
-using AllLive.Core.Models;
-using System.Threading.Tasks;
-using Windows.Services.Store;
-using Windows.UI.Popups;
 
 // https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x804 上介绍了“空白页”项模板
 
@@ -22,7 +22,7 @@ namespace AllLive.UWP
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        
+
         public MainPage()
         {
             this.NavigationCacheMode = NavigationCacheMode.Enabled;

@@ -152,7 +152,7 @@ namespace AllLive.UWP
                 }
 
             }
-           
+
         }
 
         private void BaseFramePage_PointerPressed(object sender, PointerRoutedEventArgs e)
