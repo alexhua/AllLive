@@ -2,7 +2,7 @@
 using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
-using System.Drawing;
+using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
 using System.Timers;
@@ -68,6 +68,7 @@ namespace AllLive.Core.Danmaku
                         wSPushMessage.ReadFrom(stream);
                         if (wSPushMessage.Uri == 1400)
                         {
+
                             HYMessage messageNotice = new HYMessage();
                             messageNotice.ReadFrom(new TarsInputStream(wSPushMessage.Msg));
                             var uname = messageNotice.UserInfo.NickName;
@@ -78,8 +79,9 @@ namespace AllLive.Core.Danmaku
                                 Type = LiveMessageType.Chat,
                                 Message = content,
                                 UserName = uname,
-                                Color = color <= 0 ? Color.White : Utils.NumberToColor(color),
+                                Color = color <= 0 ? DanmakuColor.White : new DanmakuColor(color),
                             });
+
                         }
                         if (wSPushMessage.Uri == 8006)
                         {
@@ -92,6 +94,44 @@ namespace AllLive.Core.Danmaku
                                 Data = online,
                             });
                         }
+                    }
+                    else if (type == 22)
+                    {
+                        Debug.WriteLine($"收到消息:[Type:{type}]");
+                        stream = new TarsInputStream(stream.Read(new byte[0], 1, false));
+                        HYPushMessageV2 wSPushMessage = new HYPushMessageV2();
+                        wSPushMessage.ReadFrom(stream);
+                        foreach (var item in wSPushMessage.MsgItem)
+                        {
+                            if (item.Uri == 1400)
+                            {
+                                HYMessage messageNotice = new HYMessage();
+                                messageNotice.ReadFrom(new TarsInputStream(item.Msg));
+                                var uname = messageNotice.UserInfo.NickName;
+                                var content = messageNotice.Content;
+                                var color = messageNotice.BulletFormat.FontColor;
+                                NewMessageEvent?.Invoke(this, new LiveMessage()
+                                {
+                                    Type = LiveMessageType.Chat,
+                                    Message = content,
+                                    UserName = uname,
+                                    Color = color <= 0 ? DanmakuColor.White : new DanmakuColor(color),
+                                });
+
+                            }
+                            if (item.Uri == 8006)
+                            {
+                                long online = 0;
+                                var s = new TarsInputStream(item.Msg);
+                                online = s.Read(online, 0, false);
+                                NewMessageEvent?.Invoke(this, new LiveMessage()
+                                {
+                                    Type = LiveMessageType.Online,
+                                    Data = online,
+                                });
+                            }
+                        }
+
                     }
                 }
                 catch (Exception)
@@ -200,6 +240,44 @@ namespace AllLive.Core.Danmaku
             _os.Write(Uri, 1);
             _os.Write(Msg, 2);
             _os.Write(ProtocolType, 3);
+        }
+    }
+    public class HYPushMessageV2 : TarsStruct
+    {
+
+
+        public string GroupId = "";
+        public HYMsgItem[] MsgItem = new HYMsgItem[] { };
+        public int ProtocolType = 0;
+        public override void ReadFrom(TarsInputStream _is)
+        {
+            GroupId = _is.Read(GroupId, 0, false);
+            MsgItem = _is.readArray<HYMsgItem>(MsgItem, 1, false);
+        }
+
+        public override void WriteTo(TarsOutputStream _os)
+        {
+            _os.Write(GroupId, 0);
+            _os.Write(MsgItem, 1);
+        }
+    }
+    public class HYMsgItem : TarsStruct
+    {
+        public long Uri = 0;
+        public byte[] Msg = new byte[0];
+        public long MsgId = 0;
+        public override void ReadFrom(TarsInputStream _is)
+        {
+            Uri = _is.Read(Uri, 0, false);
+            Msg = _is.Read(Msg, 1, false);
+            MsgId = _is.Read(MsgId, 2, false);
+        }
+
+        public override void WriteTo(TarsOutputStream _os)
+        {
+            _os.Write(Uri, 0);
+            _os.Write(Msg, 1);
+            _os.Write(MsgId, 2);
         }
     }
     public class HYSender : TarsStruct

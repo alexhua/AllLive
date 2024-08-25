@@ -1,13 +1,17 @@
-﻿using AllLive.Core.Danmaku;
-using AllLive.Core.Helper;
-using AllLive.Core.Interface;
+﻿using AllLive.Core.Interface;
 using AllLive.Core.Models;
+using AllLive.Core.Danmaku;
+using AllLive.Core.Helper;
 using Jint;
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+
+using System.Xml.Linq;
+using System.Linq;
+
 /*
 * 参考：
 * https://github.com/wbt5/real-url/blob/master/douyu.py
@@ -20,61 +24,42 @@ namespace AllLive.Core
         public ILiveDanmaku GetDanmaku() => new DouyuDanmaku();
         public async Task<List<LiveCategory>> GetCategores()
         {
-            List<LiveCategory> categories = new List<LiveCategory>() {
-                new LiveCategory() {
-                    ID="PCgame",
-                    Name="网游竞技",
-                },
-                new LiveCategory() {
-                    ID="djry",
-                    Name="单机热游",
-                },
-                new LiveCategory() {
-                    ID="syxx",
-                    Name="手游休闲",
-                },
-                new LiveCategory() {
-                    ID="yl",
-                    Name="娱乐天地",
-                },
-                new LiveCategory() {
-                    ID="yz",
-                    Name="颜值",
-                },
-                new LiveCategory() {
-                    ID="kjwh",
-                    Name="科技文化",
-                },
-                new LiveCategory() {
-                    ID="yp",
-                    Name="语言互动",
-                },
-
-            };
-            foreach (var item in categories)
+            List<LiveCategory> categories = new List<LiveCategory>();
+            var result = await HttpUtil.GetString("https://m.douyu.com/api/cate/list");
+            var obj = JsonNode.Parse(result);
+            var cate1 = obj["data"]["cate1Info"].AsArray();
+            var cate2 = obj["data"]["cate2Info"].AsArray();
+            foreach (var item in cate1)
             {
-                item.Children = await GetSubCategories(item.ID);
+                var cate1Id = item["cate1Id"].ToString();
+                var cate1Name = item["cate1Name"].ToString();
+                List<LiveSubCategory> subCategories = new List<LiveSubCategory>();
+                cate2.Where(x => x["cate1Id"].ToString() == cate1Id).ToList().ForEach(element =>
+                {
+                    subCategories.Add(new LiveSubCategory()
+                    {
+                        Pic = element["icon"].ToString(),
+                        ID = element["cate2Id"].ToString(),
+                        ParentID = cate1Id,
+                        Name = element["cate2Name"].ToString(),
+                    });
+                });
+               
+                categories.Add(
+                  new LiveCategory()
+                  {
+                      ID = cate1Id,
+                      Name = cate1Name,
+                      // 只取前30个子分类
+                      Children = subCategories.Take(30).ToList()
+                  }
+                );
             }
+            categories.Sort((x, y) => x.ID.CompareTo(y.ID));
             return categories;
         }
 
-        private async Task<List<LiveSubCategory>> GetSubCategories(string id)
-        {
-            List<LiveSubCategory> subs = new List<LiveSubCategory>();
-            var result = await HttpUtil.GetString($"https://www.douyu.com/japi/weblist/api/getC2List?shortName={id}&offset=0&limit=200");
-            var obj = JsonNode.Parse(result);
-            foreach (var item in obj["data"]["list"].AsArray())
-            {
-                subs.Add(new LiveSubCategory()
-                {
-                    Pic = item["squareIconUrlW"].ToString(),
-                    ID = item["cid2"].ToString(),
-                    ParentID = item["cid1"].ToString(),
-                    Name = item["cname2"].ToString(),
-                });
-            }
-            return subs;
-        }
+      
         public async Task<LiveCategoryResult> GetCategoryRooms(LiveSubCategory category, int page = 1)
         {
             LiveCategoryResult categoryResult = new LiveCategoryResult()
@@ -125,27 +110,43 @@ namespace AllLive.Core
         }
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
         {
-            Dictionary<string, string> headers = new Dictionary<string, string>();
-            headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0000.000 Safari/537.36");
-            var result = await HttpUtil.GetString($"https://www.douyu.com/{roomId}", headers);
-            headers["user-agent"] = "Mozilla/5.0 (iPhone; CPU iPhone OS 15_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1";
-            var result_json = await HttpUtil.GetString($"https://m.douyu.com/{roomId}", headers);
-            var obj = JsonNode.Parse($"{{{result_json.MatchText(@"roomInfo.:{.*roomInfo.:{(.*?)}")}}}");
+            var roomInfo = await GetRoomInfo(roomId.ToString());
+            var jsEncResult = await HttpUtil.GetString($"https://www.douyu.com/swf_api/homeH5Enc?rids={roomId}", new Dictionary<string, string>()
+            {
+                { "referer", $"https://m.douyu.com/{roomId}"},
+                { "user-agent","Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1 Edg/114.0.0.0" },
+            });
+            var crptext = JsonNode.Parse(jsEncResult)["data"][$"room{roomId}"].ToString();
+           
+
             return new LiveRoomDetail()
             {
-                Cover = obj["roomSrc"].ToString(),
-                Online = ParseHotNum(obj["hn"].ToString()),
-                RoomID = obj["rid"].ToString(),
-                Title = obj["roomName"].ToString(),
-                UserName = obj["nickname"].ToString(),
-                UserAvatar = obj["avatar"].ToString(),
-                Introduction = "",
-                Notice = obj["notice"].ToString(),
-                Status = obj["isLive"].ToInt32() == 1,
-                DanmakuData = obj["rid"].ToString(),
-                Data = GetPlayArgs(result, obj["rid"].ToString()),
-                Url = "https://www.douyu.com/" + roomId
+                Cover = roomInfo["room_pic"].ToString(),
+                Online = ParseHotNum(roomInfo["room_biz_all"]["hot"].ToString()),
+                RoomID = roomInfo["room_id"].ToString(),
+                Title = roomInfo["room_name"].ToString(),
+                UserName = roomInfo["owner_name"].ToString(),
+                UserAvatar = roomInfo["owner_avatar"].ToString(),
+                Introduction =roomInfo["show_details"].ToString(),
+                Notice = "",
+                Status = roomInfo["show_status"].ToInt32() == 1 && roomInfo["videoLoop"].ToInt32() != 1,
+                DanmakuData = roomInfo["room_id"].ToString(),
+                Data = GetPlayArgs(crptext, roomInfo["room_id"].ToString()),
+                Url = "https://www.douyu.com/" + roomId,
+                IsRecord= roomInfo["videoLoop"].ToInt32() == 1,
             };
+        }
+
+
+        private async Task<JsonNode> GetRoomInfo(string roomId)
+        {
+            var result = await HttpUtil.GetString($"https://www.douyu.com/betard/{roomId}", new Dictionary<string, string>()
+            {
+                { "referer", $"https://www.douyu.com/{roomId}"},
+                { "user-agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.1823.43" },
+            });
+            var obj = JsonNode.Parse(result);
+            return obj["room"];
         }
 
         private string GetPlayArgs(string html, string rid)
@@ -214,6 +215,18 @@ namespace AllLive.Core
                 lineNames.Add(item["name"].ToString());
                 cdns.Add(item["cdn"].ToString());
             }
+            // 如果cdn以scdn开头，将其放到最后
+            for (int i = 0; i < cdns.Count; i++)
+            {
+                if (cdns[i].StartsWith("scdn"))
+                {
+                    cdns.Add(cdns[i]);
+                    cdns.RemoveAt(i);
+                    break;
+                }
+            }
+
+
             foreach (var item in obj["data"]["multirates"].AsArray())
             {
                 qualities.Add(new LivePlayQuality()
@@ -256,6 +269,15 @@ namespace AllLive.Core
                 return "";
             }
 
+        }
+        public async Task<bool> GetLiveStatus(object roomId)
+        {
+            var roomInfo = await GetRoomInfo(roomId.ToString());
+            return roomInfo["show_status"].ToInt32() == 1 && roomInfo["videoLoop"].ToInt32() != 1;
+        }
+        public Task<List<LiveSuperChatMessage>> GetSuperChatMessages(object roomId)
+        {
+            return Task.FromResult(new List<LiveSuperChatMessage>());
         }
 
         private int ParseHotNum(string hn)

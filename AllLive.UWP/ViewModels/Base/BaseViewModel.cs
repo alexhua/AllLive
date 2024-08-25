@@ -5,7 +5,15 @@ using System.Windows.Input;
 
 namespace AllLive.UWP.ViewModels
 {
-    public class BaseViewModel : INotifyPropertyChanged
+    public class BaseNotifyPropertyChanged:INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler PropertyChanged;
+        public virtual void DoPropertyChanged(string name)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+    }
+    public class BaseViewModel : BaseNotifyPropertyChanged
     {
         public BaseViewModel()
         {
@@ -38,11 +46,7 @@ namespace AllLive.UWP.ViewModels
             set { _canLoadMore = value; DoPropertyChanged("CanLoadMore"); }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        public virtual void DoPropertyChanged(string name)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        }
+        
 
         private bool _empty = false;
         public bool IsEmpty

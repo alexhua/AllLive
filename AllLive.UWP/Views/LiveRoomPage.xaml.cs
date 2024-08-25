@@ -1,32 +1,39 @@
-﻿using AllLive.Core.Models;
-using AllLive.UWP.Helper;
-using AllLive.UWP.Models;
+﻿using AllLive.UWP.Models;
 using AllLive.UWP.ViewModels;
-using FFmpegInteropX;
-using Microsoft.Toolkit.Uwp.UI;
-using Microsoft.UI.Xaml.Controls;
-using NSDanmaku.Model;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text.Json;
-using System.Threading.Tasks;
 using Windows.Foundation;
-using Windows.Graphics.Display;
-using Windows.Graphics.Imaging;
-using Windows.Media.Playback;
-using Windows.Storage;
-using Windows.System.Display;
-using Windows.UI;
-using Windows.UI.Popups;
-using Windows.UI.ViewManagement;
+using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
+using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media.Imaging;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
-
+using AllLive.Core.Models;
+using AllLive.UWP.Helper;
+using Microsoft.UI.Xaml.Controls;
+using NSDanmaku.Model;
+using Windows.UI.ViewManagement;
+using Windows.UI.Popups;
+using Windows.System.Display;
+using System.Threading.Tasks;
+using Windows.Storage;
+using Windows.Graphics.Imaging;
+using Windows.UI.Xaml.Media.Imaging;
+using Windows.Graphics.Display;
+using Windows.UI;
+using Windows.ApplicationModel.Core;
+using System.Diagnostics;
+using System.Text.Json;
+using Windows.UI.Core;
+using FFmpegInteropX;
+using Windows.Media.Playback;
+using System.Text;
 // https://go.microsoft.com/fwlink/?LinkId=234238 上介绍了“空白页”项模板
 
 namespace AllLive.UWP.Views
@@ -38,9 +45,10 @@ namespace AllLive.UWP.Views
     {
         readonly LiveRoomVM liveRoomVM;
         readonly SettingVM settingVM;
+
+        FFmpegInteropX.FFmpegMediaSource interopMSS;
         readonly MediaPlayer mediaPlayer;
-        readonly MediaSourceConfig _config;
-        FFmpegMediaSource ffmpegMSS;
+
         DisplayRequest dispRequest;
         PageArgs pageArgs;
         //当前处于小窗
@@ -56,13 +64,6 @@ namespace AllLive.UWP.Views
             liveRoomVM = new LiveRoomVM(settingVM);
             liveRoomVM.Dispatcher = this.Dispatcher;
             dispRequest = new DisplayRequest();
-            _config = new MediaSourceConfig();
-            _config.ReadAheadBufferDuration = TimeSpan.FromSeconds(5);
-            _config.FFmpegOptions.Add("rw_timeout", 8 * 1000000);
-            _config.FFmpegOptions.Add("reconnect_at_eof", 1);
-            _config.FFmpegOptions.Add("reconnect_streamed", 1);
-            _config.FFmpegOptions.Add("reconnect_on_network_error", 1);
-            _config.FFmpegOptions.Add("reconnect_delay_max", 5);
             liveRoomVM.ChangedPlayUrl += LiveRoomVM_ChangedPlayUrl;
             liveRoomVM.AddDanmaku += LiveRoomVM_AddDanmaku;
             //每过2秒就设置焦点
@@ -81,9 +82,167 @@ namespace AllLive.UWP.Views
 
             timer_focus.Start();
             controlTimer.Start();
+            if (Utils.IsXbox&& SettingHelper.GetValue<int>(SettingHelper.XBOX_MODE, 0) == 0)
+            {
+                XBoxControl.Visibility = Visibility.Visible;
+                StandardControl.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                XBoxControl.Visibility = Visibility.Collapsed;
+                ClearXboxSettingBind();
+                StandardControl.Visibility = Visibility.Visible;
+            }
+         
 
-            LoadSetting();
         }
+
+        private void ClearXboxSettingBind()
+        {
+            XboxSuperChat.ClearValue(ListView.ItemsSourceProperty);
+            xboxSettingsDMSize.ClearValue(ComboBox.SelectedValueProperty);
+            xboxSettingsDecoder.ClearValue(ToggleSwitch.IsOnProperty);
+            xboxSettingsDMArea.ClearValue(ComboBox.SelectedIndexProperty);
+            xboxSettingsDMOpacity.ClearValue(ComboBox.SelectedValueProperty);
+            xboxSettingsDMSpeed.ClearValue(ComboBox.SelectedValueProperty);
+            xboxSettingsDMStyle.ClearValue(ComboBox.SelectedValueProperty);
+            xboxSettingsDMColorful.ClearValue(ToggleSwitch.IsOnProperty);
+            xboxSettingsDMBold.ClearValue(ToggleSwitch.IsOnProperty);
+        }
+
+        #region 播放器事件
+        private async void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
+        {
+            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+            {
+                var index = liveRoomVM.Lines.IndexOf(liveRoomVM.CurrentLine);
+                //尝试切换
+                if (index == liveRoomVM.Lines.Count - 1)
+                {
+                    liveRoomVM.Living = false;
+                    try
+                    {
+                        dispRequest.RequestRelease();
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+                else
+                {
+                    liveRoomVM.CurrentLine = liveRoomVM.Lines[index + 1];
+                }
+            });
+        }
+
+        private async void PlaybackSession_BufferingEnded(MediaPlaybackSession sender, object args)
+        {
+            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+            {
+                PlayerLoading.Visibility = Visibility.Collapsed;
+            });
+
+        }
+
+        private async void PlaybackSession_BufferingProgressChanged(MediaPlaybackSession sender, object args)
+        {
+            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+            {
+                PlayerLoadText.Text = sender.BufferingProgress.ToString("p");
+            });
+        }
+
+        private async void PlaybackSession_BufferingStarted(MediaPlaybackSession sender, object args)
+        {
+            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+            {
+                PlayerLoading.Visibility = Visibility.Visible;
+                PlayerLoadText.Text = "缓冲中";
+            });
+        }
+
+        private async void MediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
+        {
+            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal,  () =>
+            {
+               
+                PlayError();
+            });
+
+        }
+
+        private async void MediaPlayer_MediaOpened(MediaPlayer sender, object args)
+        {
+            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+            {
+                //保持屏幕常亮
+                dispRequest.RequestActive();
+                PlayerLoading.Visibility = Visibility.Collapsed;
+                SetMediaInfo();
+            });
+        }
+
+        private async void PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
+        {
+            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+            {
+                switch (sender.PlaybackState)
+                {
+                    case MediaPlaybackState.None:
+                        break;
+                    case MediaPlaybackState.Opening:
+                        PlayerLoading.Visibility = Visibility.Visible;
+                        PlayerLoadText.Text = "加载中";
+                        break;
+                    case MediaPlaybackState.Buffering:
+                        PlayerLoading.Visibility = Visibility.Visible;
+                        PlayerLoadText.Text = "缓冲中";
+                        break;
+                    case MediaPlaybackState.Playing:
+                        PlayerLoading.Visibility = Visibility.Collapsed;
+                        PlayBtnPlay.Visibility = Visibility.Collapsed;
+                        PlayBtnPause.Visibility = Visibility.Visible;
+                        dispRequest.RequestActive();
+                        liveRoomVM.Living = true;
+                        SetMediaInfo();
+                        break;
+                    case MediaPlaybackState.Paused:
+                        PlayerLoading.Visibility = Visibility.Collapsed;
+                        PlayBtnPlay.Visibility = Visibility.Visible;
+                        PlayBtnPause.Visibility = Visibility.Collapsed;
+                        break;
+                    default:
+                        break;
+                }
+            });
+        }
+
+        private void SetMediaInfo()
+        {
+            try
+            {
+
+                var str = $"Url: {liveRoomVM.CurrentLine?.Url ?? ""}\r\n";
+                str += $"Quality: {liveRoomVM.CurrentQuality?.Quality ?? ""}\r\n";
+                str += $"Video Codec: {interopMSS.CurrentVideoStream.CodecName}\r\nAudio Codec:{interopMSS.AudioStreams[0].CodecName}\r\n";
+                str += $"Resolution: {interopMSS.CurrentVideoStream.PixelWidth} x {interopMSS.CurrentVideoStream.PixelHeight}\r\n";
+                str += $"Video Bitrate: {interopMSS.CurrentVideoStream.Bitrate / 1024} Kbps\r\n";
+                str += $"Audio Bitrate: {interopMSS.AudioStreams[0].Bitrate / 1024} Kbps\r\n";
+                str += $"Decoder Engine: {interopMSS.CurrentVideoStream.DecoderEngine.ToString()}";
+                txtInfo.Text = str;
+            }
+            catch (Exception ex)
+            {
+                txtInfo.Text = $"读取信息失败\r\n{ex.Message}";
+            }
+
+
+
+        }
+
+        #endregion
+
+
 
         private void LiveRoomVM_AddDanmaku(object sender, LiveMessage e)
         {
@@ -103,6 +262,26 @@ namespace AllLive.UWP.Views
             var elent = FocusManager.GetFocusedElement();
             if (elent is TextBox || elent is AutoSuggestBox)
             {
+                args.Handled = false;
+                return;
+            }
+            if (XBoxSplitView.IsPaneOpen)
+            {
+                if (args.VirtualKey == Windows.System.VirtualKey.GamepadMenu)
+                {
+                    XBoxSplitView.IsPaneOpen = false;
+                    args.Handled = true;
+                    return;
+                }
+                if (args.VirtualKey == Windows.System.VirtualKey.GamepadB)
+                {
+                    if (XboxSuperChat.Visibility==Visibility.Visible)
+                    {
+                        XBoxSplitView.IsPaneOpen = false;
+                    }
+                    args.Handled = true;
+                    return;
+                }
                 args.Handled = false;
                 return;
             }
@@ -149,9 +328,7 @@ namespace AllLive.UWP.Views
                     }
                     else if (PlayBtnFullScreen.Visibility == Visibility.Visible)
                     {
-                        Frame parentFrame = this.FindParent("MainFrame") as Frame;
-                        if (parentFrame != null && parentFrame.CanGoBack)
-                            parentFrame.GoBack();
+                        this.Frame.GoBack();
                     }
                     else
                     {
@@ -179,6 +356,7 @@ namespace AllLive.UWP.Views
                     break;
                 case Windows.System.VirtualKey.F9:
                 case Windows.System.VirtualKey.D:
+                case Windows.System.VirtualKey.GamepadX:
                     //if (DanmuControl.Visibility == Visibility.Visible)
                     //{
                     //    DanmuControl.Visibility = Visibility.Collapsed;
@@ -200,17 +378,43 @@ namespace AllLive.UWP.Views
                     liveRoomVM?.Stop();
                     liveRoomVM.LoadData(pageArgs.Site, liveRoomVM.RoomID);
                     break;
+                 case Windows.System.VirtualKey.GamepadA:
+                    ShowControl(control.Visibility == Visibility.Collapsed);
+                    break;
+                case Windows.System.VirtualKey.GamepadMenu:
+                    //打开设置
+                    XBoxSettings.Visibility = Visibility.Visible;
+                    XboxSuperChat.Visibility = Visibility.Collapsed;
+                    XBoxSplitView.IsPaneOpen = true;
+                    break;
+                case Windows.System.VirtualKey.GamepadLeftTrigger:
+                    //刷新直播间
+                    BottomBtnRefresh_Click(this,null);
+                    break;
+                case Windows.System.VirtualKey.GamepadB:
+                    //退出直播间
+                    this.Frame.GoBack();
+                    break;
+                case Windows.System.VirtualKey.GamepadY:
+                    //查看SC
+                    XBoxSettings.Visibility = Visibility.Collapsed;
+                    XboxSuperChat.Visibility = Visibility.Visible;
+                    XBoxSplitView.IsPaneOpen = true;
+                    break;
                 case Windows.System.VirtualKey.B:
-                    if (liveRoomVM.IsFavorite)
+                case Windows.System.VirtualKey.GamepadRightTrigger:
+                    //关注/取消关注
+                    if(liveRoomVM.IsFavorite)
                     {
                         liveRoomVM.RemoveFavoriteCommand.Execute(null);
-                        Utils.ShowMessageToast("收藏已取消");
+                        Utils.ShowMessageToast("已取消关注");
                     }
                     else
                     {
                         liveRoomVM.AddFavoriteCommand.Execute(null);
-                        Utils.ShowMessageToast("收藏成功");
+                        Utils.ShowMessageToast("已添加关注");
                     }
+                  
                     break;
                 default:
                     break;
@@ -218,9 +422,9 @@ namespace AllLive.UWP.Views
         }
 
 
-        private async void LiveRoomVM_ChangedPlayUrl(object sender, string e)
+        private void LiveRoomVM_ChangedPlayUrl(object sender, string e)
         {
-            await SetPlayer(e);
+            _ = SetPlayer(e);
         }
         private async Task SetPlayer(string url)
         {
@@ -233,55 +437,103 @@ namespace AllLive.UWP.Views
                     mediaPlayer.Pause();
                     mediaPlayer.Source = null;
                 }
-                if (ffmpegMSS != null)
+                if (interopMSS != null)
                 {
-                    ffmpegMSS.Dispose();
-                    ffmpegMSS = null;
+                    interopMSS.Dispose();
+                    interopMSS = null;
                 }
-                ffmpegMSS = await FFmpegMediaSource.CreateFromUriAsync(url, _config);
+
+                var config = new MediaSourceConfig();
+                config.FFmpegOptions.Add("rtsp_transport", "tcp");
+                config.FFmpegOptions.Add("rw_timeout", 8 * 1000000);
+                config.FFmpegOptions.Add("reconnect_at_eof", 1);
+                config.FFmpegOptions.Add("reconnect_streamed", 1);
+                config.FFmpegOptions.Add("reconnect_on_network_error", 1);
+                config.FFmpegOptions.Add("reconnect_delay_max", 5);
+                var decoder = SettingHelper.GetValue<int>(SettingHelper.VIDEO_DECODER, Utils.IsXbox ? 1 : 0);
+                switch (decoder)
+                {
+                    case 1:
+                        config.Video.VideoDecoderMode = VideoDecoderMode.ForceSystemDecoder;
+                        break;
+                    case 2:
+                        config.Video.VideoDecoderMode = VideoDecoderMode.ForceFFmpegSoftwareDecoder;
+                        break;
+                    default:
+                        config.Video.VideoDecoderMode = VideoDecoderMode.Automatic;
+                        break;
+                }
+                if (liveRoomVM.SiteName == "哔哩哔哩直播")
+                {
+                    config.FFmpegOptions.Add("user_agent", "Mozilla/5.0 BiliDroid/1.12.0 (bbcallen@gmail.com)");
+                    config.FFmpegOptions.Add("referer", "https://live.bilibili.com/");
+                }
+                else if (liveRoomVM.SiteName == "虎牙直播")
+                {
+                    config.FFmpegOptions.Add("user_agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0");
+                    config.FFmpegOptions.Add("referer", "https://www.huya.com");
+
+                }
+                try
+                {
+                    interopMSS = await FFmpegMediaSource.CreateFromUriAsync(url, config);
+                }
+                catch (Exception ex)
+                {
+                    LogHelper.Log("播放器初始化失败", LogType.ERROR, ex);
+                    PlayError();
+                    return;
+                }
+              
                 mediaPlayer.AutoPlay = true;
-                mediaPlayer.Source = ffmpegMSS.CreateMediaPlaybackItem();
+                mediaPlayer.Volume = SliderVolume.Value;
+                mediaPlayer.Source = interopMSS.CreateMediaPlaybackItem();
                 player.SetMediaPlayer(mediaPlayer);
             }
             catch (Exception ex)
             {
-                var message = ex.Message.Split("\r\n")[0];
-                var lineIndex = liveRoomVM.Lines.IndexOf(liveRoomVM.CurrentLine);
-
-                if (lineIndex != -1 && lineIndex < liveRoomVM.Lines.Count - 1)
-                {
-                    var name = $"线路{lineIndex + 1}";
-                    if (liveRoomVM.CurrentQuality.LineNames != null && !string.IsNullOrWhiteSpace(liveRoomVM.CurrentQuality.LineNames[lineIndex]))
-                    {
-                        name = liveRoomVM.CurrentQuality.LineNames[lineIndex];
-                    }
-                    Utils.ShowMessageToast($"{name}：" + message);
-                    PlayerLoadText.Text = message;
-                    liveRoomVM.CurrentLine = liveRoomVM.Lines[lineIndex + 1];
-                }
-                else
-                {
-                    Utils.ShowMessageToast("播放失败：" + message);
-                    PlayerLoadText.Text = message;
-                }
+                Utils.ShowMessageToast("播放失败" + ex.Message);
             }
 
         }
+
+        private async void PlayError()
+        {
+            if (liveRoomVM.CurrentLine == null)
+            {
+                return;
+            }
+            // 当前线路播放失败，尝试下一个线路
+            var index = liveRoomVM.Lines.IndexOf(liveRoomVM.CurrentLine);
+            if (index == liveRoomVM.Lines.Count - 1)
+            {
+                PlayerLoading.Visibility = Visibility.Collapsed;
+                LogHelper.Log("直播加载失败", LogType.ERROR, new Exception("直播加载失败"));
+                await new MessageDialog($"啊，播放失败了，请尝试以下操作\r\n1、更换清晰度或线路\r\n2、请尝试在直播设置中打开/关闭硬解试试", "播放失败").ShowAsync();
+            }
+            else
+            {
+                liveRoomVM.CurrentLine = liveRoomVM.Lines[index + 1];
+            }
+        }
+
         private void StopPlay()
         {
-            timer_focus.Stop();
-            controlTimer.Stop();
-            Window.Current.CoreWindow.PointerCursor = new Windows.UI.Core.CoreCursor(Windows.UI.Core.CoreCursorType.Arrow, 0);
             if (mediaPlayer != null)
             {
                 mediaPlayer.Pause();
                 mediaPlayer.Source = null;
             }
-            if (ffmpegMSS != null)
+            if (interopMSS != null)
             {
-                ffmpegMSS.Dispose();
-                ffmpegMSS = null;
+                interopMSS.Dispose();
+                interopMSS = null;
             }
+
+            timer_focus.Stop();
+            controlTimer.Stop();
+            Window.Current.CoreWindow.PointerCursor = new Windows.UI.Core.CoreCursor(Windows.UI.Core.CoreCursorType.Arrow, 0);
+
             liveRoomVM?.Stop();
 
             SetFullScreen(false);
@@ -352,26 +604,30 @@ namespace AllLive.UWP.Views
             if (e.NavigationMode == NavigationMode.New)
             {
                 pageArgs = e.Parameter as PageArgs;
-                var siteInfo = MainVM.Sites.FirstOrDefault(x => x.LiveSite.Equals(pageArgs.Site));
-                if (siteInfo.Name == "哔哩哔哩直播")
+                if (Utils.IsXbox)
                 {
-                    _config.FFmpegOptions.Add("user_agent", "Mozilla/5.0 BiliDroid/6.73.1 (bbcallen@gmail.com)");
-                    _config.FFmpegOptions.Add("referer", "https://live.bilibili.com/");
-                }
-                else if (siteInfo.Name == "虎牙直播")
-                {
-                    _config.FFmpegOptions.Add("user_agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1");
+                    LoadSetting();
+                    LoadXboxSetting();
                 }
                 else
                 {
-                    _config.FFmpegOptions.Add("user_agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                    LoadSetting();
                 }
+                
+                var siteInfo = MainVM.Sites.FirstOrDefault(x => x.LiveSite.Equals(pageArgs.Site));
                 liveRoomVM.SiteLogo = siteInfo.Logo;
                 liveRoomVM.SiteName = siteInfo.Name;
 
                 var data = pageArgs.Data as LiveRoomItem;
                 MessageCenter.ChangeTitle("", pageArgs.Site);
+                
                 liveRoomVM.LoadData(pageArgs.Site, data.RoomID);
+
+                // 如果是XBOX，自动进入全屏
+                if (Utils.IsXbox)
+                {
+                    SetFullScreen(true);
+                }
             }
         }
 
@@ -420,37 +676,60 @@ namespace AllLive.UWP.Views
                 SettingHelper.SetValue<double>(SettingHelper.RIGHT_DETAIL_WIDTH, args.NewSize.Width + 16);
             });
             //软解视频
-            cbDecode.SelectedIndex = SettingHelper.GetValue<int>(SettingHelper.DECODE, 0);
-            switch (cbDecode.SelectedIndex)
+            //cbDecode.SelectedIndex= SettingHelper.GetValue<int>(SettingHelper.DECODE, 0);
+            //switch (cbDecode.SelectedIndex)
+            //{
+            //    case 1:
+            //        _config.VideoDecoderMode = VideoDecoderMode.ForceSystemDecoder;
+            //        break;
+            //    case 2:
+            //        _config.VideoDecoderMode = VideoDecoderMode.ForceFFmpegSoftwareDecoder;
+            //        break;
+            //    default:
+            //        _config.VideoDecoderMode = VideoDecoderMode.Automatic;
+            //        break;
+            //}
+            //cbDecode.SelectedIndex = SettingHelper.GetValue<int>(SettingHelper.DECODE, 0);
+            //cbDecode.Loaded += new RoutedEventHandler((sender, e) =>
+            //{
+            //    cbDecode.SelectionChanged += new SelectionChangedEventHandler((obj, args) =>
+            //    {
+            //        SettingHelper.SetValue(SettingHelper.DECODE, cbDecode.SelectedIndex);
+            //        switch (cbDecode.SelectedIndex)
+            //        {
+            //            case 1:
+            //                _config.VideoDecoderMode = VideoDecoderMode.ForceSystemDecoder;
+            //                break;
+            //            case 2:
+            //                _config.VideoDecoderMode = VideoDecoderMode.ForceFFmpegSoftwareDecoder;
+            //                break;
+            //            default:
+            //                _config.VideoDecoderMode = VideoDecoderMode.Automatic;
+            //                break;
+            //        }
+            //        Utils.ShowMessageToast("更改清晰度或刷新后生效");
+            //    });
+            //});
+
+            //swSoftwareDecode.Loaded += new RoutedEventHandler((sender, e) =>
+            //{
+            //    swSoftwareDecode.Toggled += new RoutedEventHandler((obj, args) =>
+            //    {
+            //        SettingHelper.SetValue(SettingHelper.SORTWARE_DECODING, swSoftwareDecode.IsOn);
+            //        //if (mediaPlayer != null)
+            //        //{
+            //        //    mediaPlayer.EnableHardwareDecoding = !swSoftwareDecode.IsOn;
+            //        //}
+
+            //        Utils.ShowMessageToast("更改清晰度或刷新后生效");
+            //    });
+            //});
+            cbDecoder.SelectedIndex = SettingHelper.GetValue<int>(SettingHelper.VIDEO_DECODER, Utils.IsXbox?1: 0);
+            cbDecoder.Loaded += new RoutedEventHandler((sender, e) =>
             {
-                case 1:
-                    _config.VideoDecoderMode = VideoDecoderMode.ForceSystemDecoder;
-                    break;
-                case 2:
-                    _config.VideoDecoderMode = VideoDecoderMode.ForceFFmpegSoftwareDecoder;
-                    break;
-                default:
-                    _config.VideoDecoderMode = VideoDecoderMode.Automatic;
-                    break;
-            }
-            cbDecode.SelectedIndex = SettingHelper.GetValue<int>(SettingHelper.DECODE, 0);
-            cbDecode.Loaded += new RoutedEventHandler((sender, e) =>
-            {
-                cbDecode.SelectionChanged += new SelectionChangedEventHandler((obj, args) =>
+                cbDecoder.SelectionChanged += new SelectionChangedEventHandler((obj, args) =>
                 {
-                    SettingHelper.SetValue(SettingHelper.DECODE, cbDecode.SelectedIndex);
-                    switch (cbDecode.SelectedIndex)
-                    {
-                        case 1:
-                            _config.VideoDecoderMode = VideoDecoderMode.ForceSystemDecoder;
-                            break;
-                        case 2:
-                            _config.VideoDecoderMode = VideoDecoderMode.ForceFFmpegSoftwareDecoder;
-                            break;
-                        default:
-                            _config.VideoDecoderMode = VideoDecoderMode.Automatic;
-                            break;
-                    }
+                    SettingHelper.SetValue(SettingHelper.VIDEO_DECODER, cbDecoder.SelectedIndex);
                     Utils.ShowMessageToast("更改清晰度或刷新后生效");
                 });
             });
@@ -466,6 +745,16 @@ namespace AllLive.UWP.Views
                 var visibility = PlaySWDanmu.IsOn ? Visibility.Visible : Visibility.Collapsed;
                 DanmuControl.Visibility = visibility;
                 SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHOW, PlaySWDanmu.IsOn);
+            });
+
+            // 保留醒目留言
+            var keepSC= SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.KEEP_SUPER_CHAT, true);
+            swKeepSC.IsOn = keepSC;
+            liveRoomVM.SetSCTimer();
+            swKeepSC.Toggled += new RoutedEventHandler((e, args) =>
+            {
+                SettingHelper.SetValue(SettingHelper.LiveDanmaku.KEEP_SUPER_CHAT, swKeepSC.IsOn);
+                liveRoomVM.SetSCTimer();
             });
 
             //音量
@@ -486,7 +775,7 @@ namespace AllLive.UWP.Views
             {
                 numCleanCount.ValueChanged += new TypedEventHandler<NumberBox, NumberBoxValueChangedEventArgs>((obj, args) =>
                 {
-                    liveRoomVM.MessageCleanCount = Convert.ToInt32(args.NewValue);
+                    liveRoomVM.MessageCleanCount = SettingHelper.GetValue<int>(SettingHelper.LiveDanmaku.DANMU_CLEAN_COUNT, Convert.ToInt32(args.NewValue));
                     SettingHelper.SetValue(SettingHelper.LiveDanmaku.DANMU_CLEAN_COUNT, Convert.ToInt32(args.NewValue));
                 });
             });
@@ -527,7 +816,8 @@ namespace AllLive.UWP.Views
                 if (isMini) return;
                 SettingHelper.SetValue<double>(SettingHelper.LiveDanmaku.SPEED, DanmuSettingSpeed.Value);
             });
-            //弹幕透明度
+          
+            //保留一位小数
             DanmuControl.Opacity = SettingHelper.GetValue<double>(SettingHelper.LiveDanmaku.OPACITY, 1.0);
             DanmuSettingOpacity.ValueChanged += new RangeBaseValueChangedEventHandler((e, args) =>
             {
@@ -569,7 +859,119 @@ namespace AllLive.UWP.Views
                 SettingHelper.SetValue<bool>(SettingHelper.LiveDanmaku.COLOURFUL, DanmuSettingColourful.IsOn);
             });
         }
+        private void LoadXboxSetting()
+        {
 
+            xboxSettingsDecoder.SelectedIndex = SettingHelper.GetValue<int>(SettingHelper.VIDEO_DECODER, Utils.IsXbox ? 1 : 0);
+            xboxSettingsDecoder.Loaded += new RoutedEventHandler((sender, e) =>
+            {
+                xboxSettingsDecoder.SelectionChanged += new SelectionChangedEventHandler((obj, args) =>
+                {
+                    SettingHelper.SetValue(SettingHelper.VIDEO_DECODER, xboxSettingsDecoder.SelectedIndex);
+                    Utils.ShowMessageToast("更改清晰度或刷新后生效");
+                });
+            });
+
+            //弹幕开关
+            var state = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.SHOW, true) ? Visibility.Visible : Visibility.Collapsed;
+          
+            PlaySWDanmu.IsOn = state == Visibility.Visible;
+            PlaySWDanmu.Toggled += new RoutedEventHandler((e, args) =>
+            {
+                var visibility = PlaySWDanmu.IsOn ? Visibility.Visible : Visibility.Collapsed;
+                DanmuControl.Visibility = visibility;
+                SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHOW, PlaySWDanmu.IsOn);
+            });
+
+            ////音量
+            var volume = SettingHelper.GetValue<double>(SettingHelper.PLAYER_VOLUME, 1.0);
+            SliderVolume.Value = volume;
+            SliderVolume.ValueChanged += new RangeBaseValueChangedEventHandler((e, args) =>
+            {
+                mediaPlayer.Volume = SliderVolume.Value;
+                SettingHelper.SetValue<double>(SettingHelper.PLAYER_VOLUME, SliderVolume.Value);
+            });
+
+
+            //弹幕关键词
+            LiveDanmuSettingListWords.ItemsSource = settingVM.ShieldWords;
+
+            //弹幕大小
+            //DanmuControl.DanmakuSizeZoom = SettingHelper.GetValue<double>(SettingHelper.LiveDanmaku.FONT_ZOOM, 1);
+            xboxSettingsDMSize.SelectionChanged += new SelectionChangedEventHandler((e, args) =>
+            {
+                if (xboxSettingsDMSize.SelectedValue == null)
+                {
+                    return;
+                }
+                SettingHelper.SetValue<double>(SettingHelper.LiveDanmaku.FONT_ZOOM, (double)xboxSettingsDMSize.SelectedValue);
+            });
+
+            //弹幕速度
+            //DanmuControl.DanmakuDuration = SettingHelper.GetValue<int>(SettingHelper.LiveDanmaku.SPEED, 10);
+            xboxSettingsDMSpeed.SelectionChanged += new SelectionChangedEventHandler((e, args) =>
+            {
+                if (xboxSettingsDMSpeed.SelectedValue == null)
+                {
+                    return;
+                }
+                SettingHelper.SetValue<double>(SettingHelper.LiveDanmaku.SPEED, (int)xboxSettingsDMSpeed.SelectedValue);
+            });
+
+            //弹幕透明度
+            //DanmuControl.Opacity = SettingHelper.GetValue<double>(SettingHelper.LiveDanmaku.OPACITY, 1.0);
+            xboxSettingsDMOpacity.SelectionChanged += new SelectionChangedEventHandler((e, args) =>
+            {
+                if (xboxSettingsDMOpacity.SelectedValue == null)
+                {
+                    return;
+                }
+                SettingHelper.SetValue<double>(SettingHelper.LiveDanmaku.OPACITY, (double)xboxSettingsDMOpacity.SelectedValue);
+            });
+
+
+            //弹幕加粗
+            //DanmuControl.DanmakuBold = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.BOLD, false);
+            xboxSettingsDMBold.Toggled += new RoutedEventHandler((e, args) =>
+            {
+                SettingHelper.SetValue<bool>(SettingHelper.LiveDanmaku.BOLD, xboxSettingsDMBold.IsOn);
+            });
+
+            //弹幕样式
+            var danmuStyle = SettingHelper.GetValue<int>(SettingHelper.LiveDanmaku.BORDER_STYLE, 2);
+            if (danmuStyle > 2)
+            {
+                danmuStyle = 2;
+            }
+            //DanmuControl.DanmakuStyle = (DanmakuBorderStyle)danmuStyle;
+            xboxSettingsDMStyle.SelectionChanged += new SelectionChangedEventHandler((e, args) =>
+            {
+                if (xboxSettingsDMStyle.SelectedIndex != -1)
+                {
+                    SettingHelper.SetValue<int>(SettingHelper.LiveDanmaku.BORDER_STYLE, xboxSettingsDMStyle.SelectedIndex);
+                }
+            });
+
+
+            //弹幕显示区域
+            //DanmuControl.DanmakuArea = SettingHelper.GetValue<double>(SettingHelper.LiveDanmaku.AREA, 1);
+            xboxSettingsDMArea.SelectionChanged += new SelectionChangedEventHandler((e, args) =>
+            {
+                if (xboxSettingsDMArea.SelectedValue == null)
+                {
+                    return;
+                }
+                SettingHelper.SetValue<double>(SettingHelper.LiveDanmaku.AREA, (double)xboxSettingsDMArea.SelectedValue);
+            });
+
+            //彩色弹幕
+            xboxSettingsDMColorful.IsOn = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.COLOURFUL, true);
+            xboxSettingsDMColorful.Toggled += new RoutedEventHandler((e, args) =>
+            {
+                SettingHelper.SetValue<bool>(SettingHelper.LiveDanmaku.COLOURFUL, xboxSettingsDMColorful.IsOn);
+            });
+
+        }
         private void RemoveLiveDanmuWord_Click(object sender, RoutedEventArgs e)
         {
             var word = (sender as AppBarButton).DataContext as string;
@@ -593,140 +995,6 @@ namespace AllLive.UWP.Views
             LiveDanmuSettingTxtWord.Text = "";
             SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHIELD_WORD, JsonSerializer.Serialize(settingVM.ShieldWords));
         }
-
-        #region 播放器事件
-        private async void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
-        {
-            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-            {
-                liveRoomVM.Living = false;
-                player.SetMediaPlayer(null);
-                if (dispRequest != null)
-                {
-                    try
-                    {
-                        dispRequest.RequestRelease();
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-            });
-        }
-
-        private async void PlaybackSession_BufferingEnded(MediaPlaybackSession sender, object args)
-        {
-            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-            {
-                PlayerLoading.Visibility = Visibility.Collapsed;
-            });
-
-        }
-
-        private async void PlaybackSession_BufferingProgressChanged(MediaPlaybackSession sender, object args)
-        {
-            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-            {
-                PlayerLoadText.Text = sender.BufferingProgress.ToString("p");
-            });
-        }
-
-        private async void PlaybackSession_BufferingStarted(MediaPlaybackSession sender, object args)
-        {
-            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-            {
-                PlayerLoading.Visibility = Visibility.Visible;
-                PlayerLoadText.Text = "缓冲中";
-            });
-        }
-
-        private async void MediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
-        {
-            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, async () =>
-            {
-                LogHelper.Log("直播加载失败", LogType.ERROR, new Exception(args.ErrorMessage));
-                await new MessageDialog($"啊，直播加载失败了\r\n错误信息:{args.ErrorMessage}\r\n请尝试在直播设置中打开/关闭硬解试试", "播放失败").ShowAsync();
-            });
-
-        }
-
-        private async void MediaPlayer_MediaOpened(MediaPlayer sender, object args)
-        {
-            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-            {
-
-                if (dispRequest == null)
-                {  //页面已经退出,异步MSS需销毁
-                    ffmpegMSS?.Dispose();
-                    ffmpegMSS = null;
-                }
-                else
-                {   //保持屏幕常亮
-                    dispRequest.RequestActive();
-                    PlayerLoading.Visibility = Visibility.Collapsed;
-                    SetMediaInfo();
-                }
-            });
-        }
-
-        private async void PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
-        {
-            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-            {
-                switch (sender.PlaybackState)
-                {
-                    case MediaPlaybackState.None:
-                        break;
-                    case MediaPlaybackState.Opening:
-                        PlayerLoading.Visibility = Visibility.Visible;
-                        PlayerLoadText.Text = "加载中";
-                        break;
-                    case MediaPlaybackState.Buffering:
-                        PlayerLoading.Visibility = Visibility.Visible;
-                        break;
-                    case MediaPlaybackState.Playing:
-                        PlayBtnPlay.Visibility = Visibility.Collapsed;
-                        PlayBtnPause.Visibility = Visibility.Visible;
-                        liveRoomVM.Living = true;
-                        break;
-                    case MediaPlaybackState.Paused:
-                        PlayBtnPlay.Visibility = Visibility.Visible;
-                        PlayBtnPause.Visibility = Visibility.Collapsed;
-                        break;
-                    default:
-                        break;
-                }
-            });
-        }
-
-
-        private void SetMediaInfo()
-        {
-            try
-            {
-                var str = $"Url: {liveRoomVM.CurrentLine?.Url ?? ""}\r\n";
-                str += $"Quality: {liveRoomVM.CurrentQuality?.Quality ?? ""}\r\n";
-                if (ffmpegMSS != null)
-                {
-                    str += $"Video Codec: {ffmpegMSS.CurrentVideoStream.CodecName}\r\nAudio Codec:{ffmpegMSS.CurrentAudioStream?.CodecName ?? ""}\r\n";
-                    str += $"Resolution: {ffmpegMSS.CurrentVideoStream.PixelWidth} x {ffmpegMSS.CurrentVideoStream.PixelHeight}\r\n";
-                    str += $"FPS: {ffmpegMSS.CurrentVideoStream.FramesPerSecond}\r\n";
-                    str += $"Video Bitrate: {ffmpegMSS.CurrentVideoStream.Bitrate / 1024} Kbps\r\n";
-                    str += $"Audio Bitrate: {ffmpegMSS.AudioStreams[0].Bitrate / 1024} Kbps\r\n";
-                    str += $"Decoder Engine: {ffmpegMSS.CurrentVideoStream.DecoderEngine}";
-                }
-                txtInfo.Text = str;
-            }
-            catch (Exception ex)
-            {
-                txtInfo.Text = $"读取信息失败\r\n{ex.Message}";
-            }
-
-
-
-        }
-
-        #endregion
 
 
         #region 手势
@@ -764,6 +1032,12 @@ namespace AllLive.UWP.Views
         }
         private void Grid_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
+            if(isMini)
+            {
+                MiniWidnows(false);
+                return;
+            }
+           
             if (PlayBtnFullScreen.Visibility == Visibility.Visible)
             {
                 PlayBtnFullScreen_Click(sender, null);
@@ -922,6 +1196,11 @@ namespace AllLive.UWP.Views
 
                 PlayBtnFullScreen.Visibility = Visibility.Collapsed;
                 PlayBtnExitFullScreen.Visibility = Visibility.Visible;
+
+                ColumnRight.Width = new GridLength(0, GridUnitType.Pixel);
+                ColumnRight.MinWidth = 0;
+              
+                BottomInfo.Height = new GridLength(0, GridUnitType.Pixel);
                 SetFullWindow(true);
                 //全屏
                 if (!view.IsFullScreenMode)
@@ -954,7 +1233,15 @@ namespace AllLive.UWP.Views
             if (mini)
             {
                 SetFullWindow(true);
-                StandardControl.Visibility = Visibility.Collapsed;
+                if (Utils.IsXbox && SettingHelper.GetValue<int>(SettingHelper.XBOX_MODE, 0) == 0)
+                {
+                    XBoxControl.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    StandardControl.Visibility = Visibility.Collapsed;
+                }
+             
                 MiniControl.Visibility = Visibility.Visible;
 
                 if (ApplicationView.GetForCurrentView().IsViewModeSupported(ApplicationViewMode.CompactOverlay))
@@ -970,6 +1257,15 @@ namespace AllLive.UWP.Views
                 var fullWindowMode = SettingHelper.GetValue<bool>(SettingHelper.FULL_WINDOW_MODE, true);
                 SetFullWindow(fullWindowMode);
                 StandardControl.Visibility = Visibility.Visible;
+                if (Utils.IsXbox && SettingHelper.GetValue<int>(SettingHelper.XBOX_MODE, 0) == 0)
+                {
+                    XBoxControl.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    StandardControl.Visibility = Visibility.Visible;
+                }
+               
                 MiniControl.Visibility = Visibility.Collapsed;
                 await ApplicationView.GetForCurrentView().TryEnterViewModeAsync(ApplicationViewMode.Default);
                 DanmuControl.DanmakuSizeZoom = SettingHelper.GetValue<double>(SettingHelper.LiveDanmaku.FONT_ZOOM, 1);
@@ -1039,8 +1335,32 @@ namespace AllLive.UWP.Views
                 mediaPlayer.Pause();
                 mediaPlayer.Source = null;
             }
+            if (interopMSS != null)
+            {
+                interopMSS.Dispose();
+                interopMSS = null;
+            }
             liveRoomVM?.Stop();
             liveRoomVM.LoadData(pageArgs.Site, liveRoomVM.RoomID);
+        }
+
+        private void XboxSuperChat_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            var item = e.ClickedItem as SuperChatItem;
+            ContentDialog dialog = new ContentDialog
+            {
+                Title = item.UserName,
+                Content = new TextBlock
+                {
+                    Text = item.Message,
+                    TextWrapping = TextWrapping.Wrap,
+                    FontSize = 20
+                },
+                IsPrimaryButtonEnabled = true,
+                IsSecondaryButtonEnabled = false,
+                PrimaryButtonText = "确定"
+            };
+            _=dialog.ShowAsync();
         }
     }
 }

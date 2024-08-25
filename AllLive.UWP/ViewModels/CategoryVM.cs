@@ -48,6 +48,16 @@ namespace AllLive.UWP.ViewModels
             {
                 Loading = true;
                 var result = await site.LiveSite.GetCategores();
+                foreach (var item in result)
+                {
+                    foreach (var subItem in item.Children)
+                    {
+                        if (string.IsNullOrEmpty(subItem.Pic))
+                        {
+                            subItem.Pic = site.Logo;
+                        }
+                    }
+                }
                 CollectionViewSource collectionViewSource = new CollectionViewSource();
                 collectionViewSource.IsSourceGrouped = true;
                 collectionViewSource.ItemsPath = new PropertyPath("Children");

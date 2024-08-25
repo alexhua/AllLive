@@ -1,6 +1,8 @@
 ﻿using AllLive.UWP.Helper;
 using AllLive.UWP.Models;
 using AllLive.UWP.ViewModels;
+using Microsoft.UI.Xaml.Controls;
+using System;
 using System.Linq;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -16,23 +18,48 @@ namespace AllLive.UWP.Views
     public sealed partial class FavoritePage : Page
     {
         readonly FavoriteVM favoriteVM;
+        private DateTime mNavigatedFromTime;
         public FavoritePage()
         {
+            this.NavigationCacheMode = NavigationCacheMode.Enabled;
+            MessageCenter.UpdateFavoriteEvent += MessageCenter_UpdateFavoriteEvent; ;
             this.InitializeComponent();
             favoriteVM = new FavoriteVM();
+            mNavigatedFromTime = DateTime.Now;
         }
+
+        private void MessageCenter_UpdateFavoriteEvent(object sender, EventArgs e)
+        {
+            favoriteVM.Refresh();
+        }
+
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
-            favoriteVM.LoadData();
+
+            if(favoriteVM.Items.Count==0)
+            {
+                favoriteVM.LoadData();
+            }
+            else
+            {
+                TimeSpan timeSinceLoad = DateTime.Now - mNavigatedFromTime;
+                if (timeSinceLoad > TimeSpan.FromSeconds(300)) // 300秒为 TTL
+                {
+                    favoriteVM.LoadData();
+                }
+            }
             Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
         }
+
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             Window.Current.CoreWindow.KeyDown -= CoreWindow_KeyDown;
             favoriteVM.Items.Clear();
             base.OnNavigatingFrom(e);
+            mNavigatedFromTime = DateTime.Now;
         }
+
 
         private void ls_ItemClick(object sender, ItemClickEventArgs e)
         {

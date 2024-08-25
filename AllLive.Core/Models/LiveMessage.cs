@@ -1,4 +1,8 @@
-﻿using System.Drawing;
+﻿using AllLive.Core.Helper;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Text;
 
 namespace AllLive.Core.Models
 {
@@ -16,6 +20,10 @@ namespace AllLive.Core.Models
         /// 在线人数
         /// </summary>
         Online,
+        /// <summary>
+        /// 醒目留言
+        /// </summary>
+        SuperChat
     }
     public class LiveMessage
     {
@@ -39,6 +47,18 @@ namespace AllLive.Core.Models
         /// <summary>
         /// 弹幕颜色
         /// </summary>
-        public Color Color { get; set; } = Color.White;
+        public DanmakuColor Color { get; set; }= DanmakuColor.White;
+    }
+
+    public class LiveSuperChatMessage
+    {
+        public string UserName { get; set; }
+        public string Face { get; set; }
+        public string Message { get; set; }
+        public int Price { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public string BackgroundColor { get; set; }
+        public string BackgroundBottomColor { get; set; }
     }
 }

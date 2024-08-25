@@ -11,9 +11,11 @@ namespace AllLive.UWP.ViewModels
 {
     public class HistoryVM : BaseViewModel
     {
+        readonly List<Task<LiveRoomDetail>> DetailTasks;
         public HistoryVM()
         {
             Items = new ObservableCollection<HistoryItem>();
+            DetailTasks = new List<Task<LiveRoomDetail>>();
             CleanCommand = new RelayCommand(Clean);
             LoadProgress = 0;
         }
@@ -21,11 +23,18 @@ namespace AllLive.UWP.ViewModels
 
         public ObservableCollection<HistoryItem> Items { get; set; }
 
+        private bool _loadingLiveStatus;
+
+        public bool LoaddingLiveStatus
+        {
+            get { return _loadingLiveStatus; }
+            set { _loadingLiveStatus = value; DoPropertyChanged("LoaddingLiveStatus"); }
+        }
+
         public async void LoadData()
         {
             Loading = true;
-            LoadProgress = 0;
-            var DetailTasks = new List<Task<LiveRoomDetail>>();
+            DetailTasks.Clear();
             try
             {
                 foreach (var item in await DatabaseHelper.GetHistory())
@@ -36,25 +45,6 @@ namespace AllLive.UWP.ViewModels
                     DetailTasks.Add(detailTask);
                 }
                 IsEmpty = Items.Count == 0;
-                for (var i = 0; i < DetailTasks.Count; i++)
-                {
-                    try
-                    {
-                        var roomDetail = await DetailTasks[i];
-                        if (roomDetail != null && roomDetail.Status)
-                        {
-                            Items[i].Status = roomDetail.Status;
-                        }
-                    }
-                    catch
-                    {
-                        Utils.ShowMessageToast($"{Items[i].UserName}的房间: {Items[i].RoomID}，获取信息异常。");
-                    }
-                    finally
-                    {
-                        LoadProgress += 1d / DetailTasks.Count;
-                    }
-                }
             }
             catch (Exception ex)
             {
@@ -62,9 +52,35 @@ namespace AllLive.UWP.ViewModels
             }
             finally
             {
-                DetailTasks.Clear();
                 Loading = false;
             }
+        }
+
+        public async void LoadLiveStatus()
+        {
+            LoadProgress = 0;
+            LoaddingLiveStatus = true;
+            for (var i = 0; i < DetailTasks.Count; i++)
+            {
+                try
+                {
+                    var roomDetail = await DetailTasks[i];
+                    if (roomDetail != null && roomDetail.Status)
+                    {
+                        Items[i].Status = roomDetail.Status;
+                    }
+                }
+                catch
+                {
+                    Utils.ShowMessageToast($"{Items[i].UserName}的房间: {Items[i].RoomID}，获取信息异常。");
+                }
+                finally
+                {
+                    LoadProgress += 1d / DetailTasks.Count;
+                }
+            }
+            LoadProgress = 1;
+            LoaddingLiveStatus = false;
         }
 
         public override void Refresh()
@@ -72,6 +88,7 @@ namespace AllLive.UWP.ViewModels
             base.Refresh();
             Items.Clear();
             LoadData();
+            LoadLiveStatus();
         }
 
         public void RemoveItem(HistoryItem item)

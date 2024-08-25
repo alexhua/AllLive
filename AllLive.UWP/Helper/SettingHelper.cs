@@ -9,7 +9,8 @@ namespace AllLive.UWP.Helper
         {
             if (storageHelper.KeyExists(key))
             {
-                return storageHelper.Read<T>(key);
+                var value = storageHelper.Read<T>(key);
+                return value==null?_default:value;
             }
             else
             {
@@ -43,16 +44,15 @@ namespace AllLive.UWP.Helper
         public const string MOUSE_BACK = "MouseBack";
 
         /// <summary>
-        /// 解码
+        /// 视频解码
         /// </summary>
+        public const string VIDEO_DECODER = "VideoDecoder";
         //public const string SORTWARE_DECODING = "sortwareDecoding";
 
         /// <summary>
         /// 默认是否满窗口播放
         /// </summary>
         public const string FULL_WINDOW_MODE = "fullWindowMode";
-
-        public const string DECODE = "Decode";
 
         /// <summary>
         /// 音量
@@ -62,6 +62,32 @@ namespace AllLive.UWP.Helper
         /// 亮度
         /// </summary>
         public const string PLAYER_BRIGHTNESS = "PlayeBrightness";
+
+        /// <summary>
+        /// 哔哩哔哩Cookie
+        /// </summary>
+        public const string BILI_COOKIE = "BiliCookie";
+
+        /// <summary>
+        /// 哔哩哔哩用户ID
+        /// </summary>
+        public const string BILI_USER_ID = "BiliUserId";
+
+        /// <summary>
+        /// NavigationView导航栏显示模式
+        /// </summary>
+        public const string PANE_DISPLAY_MODE = "PaneDisplayMode";
+
+        /// <summary>
+        /// 忽略哔哩哔哩登录提醒
+        /// </summary>
+        public const string IGNORE_BILI_LOGIN_TIP = "IgnoreBiliLoginTip";
+
+        /// <summary>
+        /// XBOX模式
+        /// </summary>
+        public const string XBOX_MODE = "XboxMode";
+
         public class LiveDanmaku
         {
             public const string TOP_MARGIN = "LiveTopMargin";
@@ -107,6 +133,11 @@ namespace AllLive.UWP.Helper
             /// 直播弹幕清理
             /// </summary>
             public const string DANMU_CLEAN_COUNT = "LiveCleanCount";
+
+            /// <summary>
+            /// 保留醒目留言
+            /// </summary>
+            public const string KEEP_SUPER_CHAT = "KeepSuperChat";
         }
     }
 }

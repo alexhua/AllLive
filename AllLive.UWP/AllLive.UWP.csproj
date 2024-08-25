@@ -135,14 +135,21 @@
     <Compile Include="BaseFramePage.xaml.cs">
       <DependentUpon>BaseFramePage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\BiliLoginDialog.xaml.cs">
+      <DependentUpon>BiliLoginDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\MessageToast.xaml.cs">
       <DependentUpon>MessageToast.xaml</DependentUpon>
     </Compile>
     <Compile Include="Controls\MyAdaptiveGridView.cs" />
+    <Compile Include="Converters\ColorConvert.cs" />
+    <Compile Include="Converters\CountTextConvert.cs" />
     <Compile Include="Converters\DanmakuStyleConvert.cs" />
     <Compile Include="Converters\DisplayConvert.cs" />
+    <Compile Include="Converters\DoublePrecisionConvert.cs" />
     <Compile Include="Converters\ImageCovert.cs" />
     <Compile Include="Converters\NumberToStringConvert.cs" />
+    <Compile Include="Helper\BiliAccount.cs" />
     <Compile Include="Helper\ExceptionHandler.cs" />
     <Compile Include="Helper\DatabaseHelper.cs" />
     <Compile Include="Helper\LogHelper.cs" />
@@ -167,6 +174,7 @@
     <Compile Include="ViewModels\RecomendVM.cs" />
     <Compile Include="ViewModels\SearchVM.cs" />
     <Compile Include="ViewModels\SettingVM.cs" />
+    <Compile Include="ViewModels\SyncVM.cs" />
     <Compile Include="Views\CategoryDetailPage.xaml.cs">
       <DependentUpon>CategoryDetailPage.xaml</DependentUpon>
     </Compile>
@@ -194,6 +202,9 @@
     <Compile Include="Views\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\SyncPage.xaml.cs">
+      <DependentUpon>SyncPage.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
@@ -212,6 +223,7 @@
     <Content Include="Assets\LargeTile.scale-200.png" />
     <Content Include="Assets\LargeTile.scale-400.png" />
     <Content Include="Assets\Logo\bilibili.png" />
+    <Content Include="Assets\Logo\douyin.png" />
     <Content Include="Assets\Logo\egame.png" />
     <Content Include="Assets\Logo\huya.png" />
     <Content Include="Assets\Logo\douyu.png" />
@@ -276,6 +288,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Controls\BiliLoginDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Controls\MessageToast.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -283,6 +299,10 @@
     <Page Include="MainPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="ValueDictionary.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\CategoryDetailPage.xaml">
       <SubType>Designer</SubType>
@@ -320,13 +340,23 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Views\SyncPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FFmpegInteropX">
-      <Version>1.1.0-pre50</Version>
+      <Version>2.0.0-pre7</Version>
+    </PackageReference>
+    <PackageReference Include="FFmpegInteropX.FFmpegUWP">
+      <Version>5.1.100</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client">
+      <Version>8.0.8</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Data.Sqlite">
-      <Version>8.0.4</Version>
+      <Version>8.0.8</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <Version>6.2.14</Version>
@@ -347,7 +377,10 @@
       <Version>2.8.6</Version>
     </PackageReference>
     <PackageReference Include="NLog">
-      <Version>5.3.1</Version>
+      <Version>5.3.3</Version>
+    </PackageReference>
+    <PackageReference Include="ZXing.Net">
+      <Version>0.16.9</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

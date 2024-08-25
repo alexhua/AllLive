@@ -4,9 +4,11 @@ using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using System.Linq;
+using System.Web;
 using System.Threading.Tasks;
 
 namespace AllLive.Core
@@ -16,6 +18,34 @@ namespace AllLive.Core
     {
         public string Name => "哔哩哔哩直播";
         public ILiveDanmaku GetDanmaku() => new BiliBiliDanmaku();
+        /// <summary>
+        /// 哔哩哔哩Cookie
+        /// </summary>
+        public string Cookie { get; set; }
+        /// <summary>
+        /// 哔哩哔哩用户ID
+        /// </summary>
+        public long UserId { get; set; }
+
+        private Dictionary<string, string> GetRequestHeader(bool withBuvid3 = false)
+        {
+            if (string.IsNullOrEmpty(Cookie))
+            {
+                var headers = new Dictionary<string, string>();
+                if (withBuvid3)
+                {
+                    headers.Add("cookie", "buvid3=infoc;");
+                }
+                return headers;
+            }
+            else
+            {
+                return new Dictionary<string, string>() {
+                    { "cookie",Cookie },
+                };
+            }
+        }
+
         public async Task<List<LiveCategory>> GetCategores()
         {
             List<LiveCategory> categories = new List<LiveCategory>();
@@ -92,7 +122,10 @@ namespace AllLive.Core
         }
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
         {
-            var result = await HttpUtil.GetString($"https://api.live.bilibili.com/xlive/web-room/v1/index/getH5InfoByRoom?room_id={roomId}");
+            var url = "https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom";
+            var query = $"room_id={roomId}";
+            query = await GetWbiSign(query);
+            var result = await HttpUtil.GetString($"{url}?{query}", headers: GetRequestHeader());
             var obj = JsonNode.Parse(result);
 
             return new LiveRoomDetail()
@@ -106,7 +139,12 @@ namespace AllLive.Core
                 UserAvatar = obj["data"]["anchor_info"]["base_info"]["face"].ToString() + "@100w.jpg",
                 Notice = "",
                 Status = obj["data"]["room_info"]["live_status"].ToInt32() == 1,
-                DanmakuData = obj["data"]["room_info"]["room_id"].ToInt32(),
+                DanmakuData = new BiliDanmakuArgs()
+                {
+                    RoomId = obj["data"]["room_info"]["room_id"].ToInt32(),
+                    UserId = UserId,
+                    Cookie = Cookie,
+                },
                 Url = "https://live.bilibili.com/" + roomId
             };
         }
@@ -117,12 +155,7 @@ namespace AllLive.Core
                 Rooms = new List<LiveRoomItem>(),
 
             };
-            string Cookie = "buvid3=" + System.Guid.NewGuid(); //"buvid3=948E39F3-DE72-66A8-581F-101ED536193508578infoc";
-            var headers = new Dictionary<string, string>
-            {
-                { "cookie", Cookie }
-            };
-            var result = await HttpUtil.GetString($"https://api.bilibili.com/x/web-interface/search/type?context=&search_type=live&cover_type=user_cover&page={page}&order=&keyword={Uri.EscapeDataString(keyword)}&category_id=&__refresh__=true&_extra=&highlight=0&single_column=0", headers);
+            var result = await HttpUtil.GetString($"https://api.bilibili.com/x/web-interface/search/type?context=&search_type=live&cover_type=user_cover&page={page}&order=&keyword={Uri.EscapeDataString(keyword)}&category_id=&__refresh__=true&_extra=&highlight=0&single_column=0", headers: GetRequestHeader(true));
             var liveRooms = JsonNode.Parse(result)["data"]["result"]["live_room"] ?? new JsonArray();
             foreach (var item in liveRooms.AsArray())
             {
@@ -138,19 +171,66 @@ namespace AllLive.Core
             searchResult.HasMore = searchResult.Rooms.Count > 0;
             return searchResult;
         }
-
-        private string Guid()
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<List<LivePlayQuality>> GetPlayQuality(LiveRoomDetail roomDetail)
         {
+            if (string.IsNullOrEmpty(Cookie))
+            {
+                return await GetPlayQualityOld(roomDetail.RoomID);
+            }
+            else
+            {
+                return await GetPlayQualityNew(roomDetail.RoomID);
+            }
+        }
+        /// <summary>
+        /// 新的获取清晰度方式，需要登录
+        /// </summary>
+        /// <param name="roomID"></param>
+        /// <returns></returns>
+        private async Task<List<LivePlayQuality>> GetPlayQualityNew(string roomID)
+        {
+
             List<LivePlayQuality> qualities = new List<LivePlayQuality>();
-            var result = await HttpUtil.GetString($"https://api.live.bilibili.com/room/v1/Room/playUrl?cid={roomDetail.RoomID}&qn=&platform=web");
+            var result = await HttpUtil.GetString($"https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo",
+                headers: GetRequestHeader(),
+                queryParameters: new Dictionary<string, string>() {
+                    { "room_id", roomID } ,
+                    { "protocol", "0,1" },
+                    { "format", "0,1,2"},
+                    { "codec","0,1"},
+                    { "platform", "web"}
+                }
+            );
             var obj = JsonNode.Parse(result);
-            var msg = obj["message"].ToString();
-            if (!msg.Equals("0")) return await GetPlayQualityV2(roomDetail);
+            var qualitiesMap = new Dictionary<int, string>();
+            foreach (var item in obj["data"]["playurl_info"]["playurl"]["g_qn_desc"].AsArray())
+            {
+                qualitiesMap[item["qn"].ToInt32()] =
+                    item["desc"].ToString();
+            }
+            foreach (var item in obj["data"]["playurl_info"]["playurl"]["stream"][0]["format"][0]["codec"][0]["accept_qn"].AsArray())
+            {
+                var qualityItem = new LivePlayQuality()
+                {
+                    Quality = qualitiesMap[item.ToInt32()] ?? "未知清晰度",
+                    Data = item,
+                };
+                qualities.Add(qualityItem);
+            }
+            return qualities;
+        }
+
+        /// <summary>
+        /// 旧的获取清晰度方式，部分直播看不了
+        /// </summary>
+        /// <param name="roomID"></param>
+        /// <returns></returns>
+        private async Task<List<LivePlayQuality>> GetPlayQualityOld(string roomID)
+        {
+
+            List<LivePlayQuality> qualities = new List<LivePlayQuality>();
+            var result = await HttpUtil.GetString($"https://api.live.bilibili.com/room/v1/Room/playUrl?cid={roomID}&qn=&platform=web", headers: GetRequestHeader());
+            var obj = JsonNode.Parse(result);
             foreach (var item in obj["data"]["quality_description"].AsArray())
             {
                 qualities.Add(new LivePlayQuality()
@@ -158,30 +238,6 @@ namespace AllLive.Core
                     Quality = item["desc"].ToString(),
                     Data = item["qn"].ToInt32(),
                 });
-            }
-            return qualities;
-        }
-        public async Task<List<LivePlayQuality>> GetPlayQualityV2(LiveRoomDetail roomDetail)
-        {
-            List<LivePlayQuality> qualities = new List<LivePlayQuality>();
-            var result = await HttpUtil.GetString($"https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id={roomDetail.RoomID}&protocol=0,1&format=0,1,2&codec=0,1,2&qn=0&platform=web");
-            var obj = JsonNode.Parse(result);
-            var playUrlInfo = obj["data"]["playurl_info"]["playurl"];
-            var qnDescList = playUrlInfo["g_qn_desc"].AsArray();
-            foreach (var protocol in playUrlInfo["stream"].AsArray())
-            {
-                foreach (var format in protocol["format"].AsArray())
-                {
-                    foreach (var codec in format["codec"].AsArray().Reverse())
-                    {
-                        var qn = codec["current_qn"].ToInt32();
-                        qualities.Add(new LivePlayQuality()
-                        {
-                            Quality = $"{format["format_name"]}-{codec["codec_name"]}-{getQnName(qn, qnDescList)}".ToUpper(),
-                            Data = qn,
-                        });
-                    }
-                }
             }
             return qualities;
         }
@@ -199,42 +255,169 @@ namespace AllLive.Core
 
         public async Task<List<string>> GetPlayUrls(LiveRoomDetail roomDetail, LivePlayQuality qn)
         {
+            if (string.IsNullOrEmpty(Cookie))
+            {
+                return await GetPlayUrlsOld(roomDetail.RoomID, qn.Data);
+            }
+            else
+            {
+                return await GetPlayUrlsNew(roomDetail.RoomID, qn.Data);
+            }
+        }
+        private async Task<List<string>> GetPlayUrlsNew(string roomID, object qn)
+        {
             List<string> urls = new List<string>();
-            var result = await HttpUtil.GetString($"https://api.live.bilibili.com/room/v1/Room/playUrl?cid={roomDetail.RoomID}&qn={qn.Data}&platform=web");
+            List<LivePlayQuality> qualities = new List<LivePlayQuality>();
+            var result = await HttpUtil.GetString($"https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo",
+                headers: GetRequestHeader(),
+                queryParameters: new Dictionary<string, string>() {
+                    { "room_id", roomID } ,
+                    { "protocol", "0,1" },
+                    { "format", "0,2"},
+                    { "codec","0"},
+                    { "platform", "web" },
+                    { "qn",qn.ToString()}
+                }
+            );
             var obj = JsonNode.Parse(result);
-            var msg = obj["message"].ToString();
-            if (!msg.Equals("0")) return await GetPlayUrlsV2(roomDetail, qn);
+            var streamList = obj["data"]["playurl_info"]["playurl"]["stream"];
+            foreach (var streamItem in streamList.AsArray())
+            {
+                var formatList = streamItem["format"];
+                foreach (var formatItem in formatList.AsArray())
+                {
+                    var codecList = formatItem["codec"];
+                    foreach (var codecItem in codecList.AsArray())
+                    {
+                        var urlList = codecItem["url_info"];
+                        var baseUrl = codecItem["base_url"].ToString();
+                        foreach (var urlItem in urlList.AsArray())
+                        {
+                            urls.Add(
+                              $"{urlItem["host"].ToString()}{baseUrl.ToString()}{urlItem["extra"].ToString()}"
+                            );
+                        }
+                    }
+                }
+            }
+
+            // 对链接进行排序，包含mcdn的在后
+            urls = urls.OrderBy(x => x.Contains("mcdn")).ToList();
+
+            return urls;
+        }
+        /// <summary>
+        /// 旧的获取播放地址方式，部分直播看不了
+        /// </summary>
+        /// <param name="roomID"></param>
+        /// <param name="qn"></param>
+        /// <returns></returns>
+        private async Task<List<string>> GetPlayUrlsOld(string roomID, object qn)
+        {
+            List<string> urls = new List<string>();
+            var result = await HttpUtil.GetString($"https://api.live.bilibili.com/room/v1/Room/playUrl?cid={roomID}&qn={qn}&platform=web", headers: GetRequestHeader());
+            var obj = JsonNode.Parse(result);
             foreach (var item in obj["data"]["durl"].AsArray())
             {
                 urls.Add(item["url"].ToString());
             }
             return urls;
         }
-        public async Task<List<string>> GetPlayUrlsV2(LiveRoomDetail roomDetail, LivePlayQuality qn)
-        {
-            List<string> urls = new List<string>();
-            var result = await HttpUtil.GetString($"https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id={roomDetail.RoomID}&protocol=0,1&format=0,1,2&codec=0,1,2&qn={qn.Data}&platform=web");
-            var obj = JsonNode.Parse(result);
-            var playUrlInfo = obj["data"]["playurl_info"]["playurl"];
-            var qnInfo = qn.Quality.ToLower().Split('-');
-            string lineFormat = qnInfo[0], lineCodec = qnInfo[1];
 
-            foreach (var protocol in playUrlInfo["stream"].AsArray())
+        public async Task<bool> GetLiveStatus(object roomId)
+        {
+            var resp = await HttpUtil.GetString($"https://api.live.bilibili.com/room/v1/Room/get_info?room_id={roomId}", headers: GetRequestHeader());
+            var obj = JsonNode.Parse(resp);
+            return obj["data"]["live_status"].ToInt32() == 1;
+        }
+
+        public async Task<List<LiveSuperChatMessage>> GetSuperChatMessages(object roomId)
+        {
+
+            var resp = await HttpUtil.GetString($"https://api.live.bilibili.com/av/v1/SuperChat/getMessageList?room_id={roomId}", headers: GetRequestHeader());
+            var obj = JsonNode.Parse(resp);
+            List<LiveSuperChatMessage> list = new List<LiveSuperChatMessage>();
+            var listNode = obj["data"]["list"];
+            if (listNode?.GetValueKind() == JsonValueKind.Array)
             {
-                foreach (var format in protocol["format"].AsArray())
+                foreach (var item in listNode.AsArray())
                 {
-                    if (!lineFormat.Equals(format["format_name"].ToString())) continue;
-                    foreach (var codec in format["codec"].AsArray())
+                    list.Add(new LiveSuperChatMessage()
                     {
-                        if (!lineCodec.Equals(codec["codec_name"].ToString())) continue;
-                        foreach (var urlInfo in codec["url_info"].AsArray())
-                        {
-                            urls.Add(urlInfo["host"].ToString() + codec["base_url"] + urlInfo["extra"]);
-                        }
-                    }
+                        BackgroundBottomColor = item["background_bottom_color"].ToString(),
+                        BackgroundColor = item["background_color"].ToString(),
+                        EndTime = Utils.TimestampToDateTime(item["end_time"].ToInt64()),
+                        StartTime = Utils.TimestampToDateTime(item["start_time"].ToInt64()),
+                        Face = $"{item["user_info"]["face"]}@200w.jpg",
+                        Message = item["message"].ToString(),
+                        Price = item["price"].ToInt32(),
+                        UserName = item["user_info"]["uname"].ToString(),
+                    });
                 }
             }
-            return urls;
+
+            return list;
+        }
+
+
+        private string _imgKey;
+        private string _subKey;
+        private int[] mixinKeyEncTab = new int[] {
+            46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49,
+            33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13, 37, 48, 7, 16, 24, 55, 40,
+            61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11,
+            36, 20, 34, 44, 52
+        };
+        private async Task<(string, string)> GetWbiKeys()
+        {
+            if (_imgKey != null && _subKey != null)
+            {
+                return (_imgKey, _subKey);
+            }
+            // 获取最新的 img_key 和 sub_key
+            var response = await HttpUtil.GetString(
+                "https://api.bilibili.com/x/web-interface/nav",
+                headers: GetRequestHeader());
+            var obj = JsonNode.Parse(response);
+
+            var imgUrl = obj["data"]["wbi_img"]["img_url"].ToString();
+            var subUrl = obj["data"]["wbi_img"]["sub_url"].ToString();
+            var imgKey = imgUrl.Substring(imgUrl.LastIndexOf('/') + 1).Split('.')[0];
+            var subKey = subUrl.Substring(subUrl.LastIndexOf('/') + 1).Split('.')[0];
+
+            _imgKey = imgKey;
+            _subKey = subKey;
+
+            return (imgKey, subKey);
+        }
+
+        private string GetMixinKey(string origin)
+        {
+            // 对 imgKey 和 subKey 进行字符顺序打乱编码
+            return mixinKeyEncTab.Aggregate("", (s, i) => s + origin[i]).Substring(0, 32);
+        }
+
+        public async Task<string> GetWbiSign(string url)
+        {
+            var (imgKey, subKey) = await GetWbiKeys();
+
+            // 为请求参数进行 wbi 签名
+            var mixinKey = GetMixinKey(imgKey + subKey);
+            var currentTime = (long)Math.Round(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
+
+            var queryString = HttpUtility.ParseQueryString(url);
+
+            var queryParams = queryString.Cast<string>().ToDictionary(k => k, v => queryString[v]);
+            queryParams["wts"] = currentTime + ""; // 添加 wts 字段
+            queryParams = queryParams.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value); // 按照 key 重排参数
+                                                                                                  // 过滤 value 中的 "!'()*" 字符
+            queryParams = queryParams.ToDictionary(x => x.Key, x => string.Join("", x.Value.ToString().Where(c => "!'()*".Contains(c) == false)));
+
+            var query = string.Join("&", queryParams.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));
+
+            var wbi_sign = Utils.ToMD5($"{query}{mixinKey}");
+
+            return $"{query}&w_rid={wbi_sign}";
         }
     }
 }

@@ -24,9 +24,35 @@ namespace AllLive.UWP.Views
         {
             settingVM = new SettingVM();
             this.InitializeComponent();
+            if (Utils.IsXbox)
+            {
+                SettingsPaneDiaplsyMode.Visibility = Visibility.Collapsed;
+                SettingsMouseClosePage.Visibility = Visibility.Collapsed;
+                SettingsFontSize.Visibility = Visibility.Collapsed;
+                SettingsAutoClean.Visibility = Visibility.Collapsed;
+                SettingsXboxMode.Visibility = Visibility.Visible;
+            }
+            BiliAccount.Instance.OnAccountChanged += BiliAccount_OnAccountChanged; 
             LoadUI();
 
         }
+
+        private void BiliAccount_OnAccountChanged(object sender, EventArgs e)
+        {
+            if (BiliAccount.Instance.Logined)
+            {
+                txtBili.Text = $"已登录：{BiliAccount.Instance.UserName}";
+                BtnLoginBili.Visibility = Visibility.Collapsed;
+                BtnLogoutBili.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                txtBili.Text = "登录可享受高清直播";
+                BtnLoginBili.Visibility = Visibility.Visible;
+                BtnLogoutBili.Visibility = Visibility.Collapsed;
+            }
+        }
+
         private void LoadUI()
         {
             //主题
@@ -52,6 +78,29 @@ namespace AllLive.UWP.Views
                     App.SetTitleBar();
                 });
             });
+
+            // xbox操作模式
+            cbXboxMode.SelectedIndex = SettingHelper.GetValue<int>(SettingHelper.XBOX_MODE, 0);
+            cbXboxMode.Loaded += new RoutedEventHandler((sender, e) =>
+            {
+                cbXboxMode.SelectionChanged += new SelectionChangedEventHandler((obj, args) =>
+                {
+                    SettingHelper.SetValue(SettingHelper.XBOX_MODE, cbXboxMode.SelectedIndex);
+                    Utils.ShowMessageToast("重启应用生效");
+                });
+            });
+
+            //导航栏显示模式
+            cbPaneDisplayMode.SelectedIndex = SettingHelper.GetValue<int>(SettingHelper.PANE_DISPLAY_MODE, 0);
+            cbPaneDisplayMode.Loaded += new RoutedEventHandler((sender, e) =>
+            {
+                cbPaneDisplayMode.SelectionChanged += new SelectionChangedEventHandler((obj, args) =>
+                {
+                    SettingHelper.SetValue(SettingHelper.PANE_DISPLAY_MODE, cbPaneDisplayMode.SelectedIndex);
+                    MessageCenter.UpdatePanelDisplayMode();
+                });
+            });
+
             //鼠标侧键返回
             swMouseClosePage.IsOn = SettingHelper.GetValue<bool>(SettingHelper.MOUSE_BACK, true);
             swMouseClosePage.Loaded += new RoutedEventHandler((sender, e) =>
@@ -62,20 +111,12 @@ namespace AllLive.UWP.Views
                 });
             });
             //视频解码
-            //swSoftwareDecode.IsOn = SettingHelper.GetValue<bool>(SettingHelper.SORTWARE_DECODING, false);
-            //swSoftwareDecode.Loaded += new RoutedEventHandler((sender, e) =>
-            //{
-            //    swSoftwareDecode.Toggled += new RoutedEventHandler((obj, args) =>
-            //    {
-            //        SettingHelper.SetValue(SettingHelper.SORTWARE_DECODING, swSoftwareDecode.IsOn);
-            //    });
-            //});
-            cbDecode.SelectedIndex = SettingHelper.GetValue<int>(SettingHelper.DECODE, 0);
-            cbDecode.Loaded += new RoutedEventHandler((sender, e) =>
+            cbDecoder.SelectedIndex = SettingHelper.GetValue<int>(SettingHelper.VIDEO_DECODER, 0);
+            cbDecoder.Loaded += new RoutedEventHandler((sender, e) =>
             {
-                cbDecode.SelectionChanged += new SelectionChangedEventHandler((obj, args) =>
+                cbDecoder.SelectionChanged += new SelectionChangedEventHandler((obj, args) =>
                 {
-                    SettingHelper.SetValue(SettingHelper.DECODE, cbDecode.SelectedIndex);
+                    SettingHelper.SetValue(SettingHelper.VIDEO_DECODER, cbDecoder.SelectedIndex);
                 });
             });
 
@@ -104,6 +145,15 @@ namespace AllLive.UWP.Views
             {
                 SettingHelper.SetValue(SettingHelper.LiveDanmaku.SHOW, DanmuSettingState.IsOn);
             });
+
+            // 保留醒目留言
+            var keepSC = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.KEEP_SUPER_CHAT, true);
+            SettingKeepSC.IsOn = keepSC;
+            SettingKeepSC.Toggled += new RoutedEventHandler((e, args) =>
+            {
+                SettingHelper.SetValue(SettingHelper.LiveDanmaku.KEEP_SUPER_CHAT, SettingKeepSC.IsOn);
+            });
+
             //弹幕清理
             numCleanCount.Value = SettingHelper.GetValue<int>(SettingHelper.LiveDanmaku.DANMU_CLEAN_COUNT, 200);
             numCleanCount.Loaded += new RoutedEventHandler((sender, e) =>
@@ -115,6 +165,15 @@ namespace AllLive.UWP.Views
             });
             //弹幕关键词
             LiveDanmuSettingListWords.ItemsSource = settingVM.ShieldWords;
+
+
+            if(BiliAccount.Instance.Logined)
+            {
+                txtBili.Text = $"已登录：{BiliAccount.Instance.UserName}";
+                BtnLoginBili.Visibility = Visibility.Collapsed;
+                BtnLogoutBili.Visibility = Visibility.Visible;
+            }
+           
         }
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
@@ -155,6 +214,31 @@ namespace AllLive.UWP.Views
             Windows.Storage.StorageFolder storageFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
             var logFolder = await storageFolder.CreateFolderAsync("log", Windows.Storage.CreationCollisionOption.OpenIfExists);
             await Launcher.LaunchFolderAsync(logFolder);
+        }
+
+        private async void BtnLoginBili_Click(object sender, RoutedEventArgs e)
+        {
+            if (BiliAccount.Instance.Logined)
+            {
+                Utils.ShowMessageToast("已登录");
+                return;
+            }
+            var result= await MessageCenter.BiliBiliLogin();
+            if (result)
+            {
+                txtBili.Text = $"已登录：{BiliAccount.Instance.UserName}";
+                BtnLoginBili.Visibility = Visibility.Collapsed;
+                BtnLogoutBili.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void BtnLogoutBili_Click(object sender, RoutedEventArgs e)
+        {
+            BiliAccount.Instance.Logout();
+            txtBili.Text = "登录可享受高清直播";
+            BtnLoginBili.Visibility = Visibility.Visible;
+            BtnLogoutBili.Visibility = Visibility.Collapsed;
+
         }
     }
 }

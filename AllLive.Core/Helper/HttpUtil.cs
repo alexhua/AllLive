@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -8,7 +9,7 @@ namespace AllLive.Core.Helper
 {
     public static class HttpUtil
     {
-        public static async Task<string> GetString(string url, IDictionary<string, string> headers = null)
+        public static async Task<string> GetString(string url, IDictionary<string, string> headers = null, IDictionary<string, string> queryParameters = null)
         {
             HttpClientHandler httpClientHandler = new HttpClientHandler
             {
@@ -23,11 +24,50 @@ namespace AllLive.Core.Helper
                         httpClient.DefaultRequestHeaders.Add(item.Key, item.Value);
                     }
                 }
+                if (queryParameters != null)
+                {
+                    url += "?";
+                    foreach (var item in queryParameters)
+                    {
+                        url += $"{item.Key}={Uri.EscapeDataString(item.Value)}&";
+                    }
+                    url = url.TrimEnd('&');
+                }
                 var result = await httpClient.GetAsync(url);
                 result.EnsureSuccessStatusCode();
                 return await result.Content.ReadAsStringAsync();
             }
         }
+        public static async Task<HttpResponseMessage> Get(string url, IDictionary<string, string> headers = null, IDictionary<string, string> queryParameters = null)
+        {
+            HttpClientHandler httpClientHandler = new HttpClientHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+            };
+            using (HttpClient httpClient = new HttpClient(httpClientHandler))
+            {
+                if (headers != null)
+                {
+                    foreach (var item in headers)
+                    {
+                        httpClient.DefaultRequestHeaders.Add(item.Key, item.Value);
+                    }
+                }
+                if (queryParameters != null)
+                {
+                    url += "?";
+                    foreach (var item in queryParameters)
+                    {
+                        url += $"{item.Key}={Uri.EscapeDataString(item.Value)}&";
+                    }
+                    url = url.TrimEnd('&');
+                }
+                var result = await httpClient.GetAsync(url);
+                result.EnsureSuccessStatusCode();
+                return result;
+            }
+        }
+
         public static async Task<string> GetUtf8String(string url, IDictionary<string, string> headers = null)
         {
             HttpClientHandler httpClientHandler = new HttpClientHandler
@@ -86,6 +126,29 @@ namespace AllLive.Core.Helper
                 var result = await httpClient.PostAsync(url, content);
                 result.EnsureSuccessStatusCode();
                 return await result.Content.ReadAsStringAsync();
+            }
+        }
+
+        public static async Task<HttpResponseMessage> Head(string url, IDictionary<string, string> headers = null)
+        {
+            HttpClientHandler httpClientHandler = new HttpClientHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+            };
+            using (HttpClient httpClient = new HttpClient(httpClientHandler))
+            {
+                if (headers != null)
+                {
+                    foreach (var item in headers)
+                    {
+                        httpClient.DefaultRequestHeaders.Add(item.Key, item.Value);
+                    }
+                }
+                var request = new HttpRequestMessage();
+                request.Method = HttpMethod.Head;
+                request.RequestUri = new Uri(url);
+                var response = await httpClient.SendAsync(request);
+                return response;
             }
         }
     }
