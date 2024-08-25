@@ -20,20 +20,9 @@ namespace AllLive.UWP
         public BaseFramePage()
         {
             this.InitializeComponent();
-            MessageCenter.NavigatePageEvent += MessageCenter_NavigatePageEvent;
-            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().BackRequested += BaseFramePage_BackRequested;
-
-            MessageCenter.ChangeTitleEvent += MessageCenter_ChangeTitleEvent;
-            MessageCenter.HideTitlebarEvent += MessageCenter_HideTitlebarEvent;
-            this.PointerPressed += BaseFramePage_PointerPressed;
-            Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
-            BtnBack.Click += BtnBack_Click;
-            MainFrame.Navigated += MainFrame_Navigated;
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.ExtendViewIntoTitleBar = true;
             Window.Current.SetTitleBar(TitleBar);
-
-
         }
 
         private void CoreWindow_KeyDown(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.KeyEventArgs args)
@@ -181,9 +170,30 @@ namespace AllLive.UWP
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
+
+            MessageCenter.NavigatePageEvent += MessageCenter_NavigatePageEvent;
+            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().BackRequested += BaseFramePage_BackRequested;
+            MessageCenter.ChangeTitleEvent += MessageCenter_ChangeTitleEvent;
+            MessageCenter.HideTitlebarEvent += MessageCenter_HideTitlebarEvent;
+            this.PointerPressed += BaseFramePage_PointerPressed;
+            Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
+            BtnBack.Click += BtnBack_Click;
+            MainFrame.Navigated += MainFrame_Navigated;
             MainFrame.Navigate(typeof(MainPage));
         }
 
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            MessageCenter.NavigatePageEvent -= MessageCenter_NavigatePageEvent;
+            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().BackRequested -= BaseFramePage_BackRequested;
+            MessageCenter.ChangeTitleEvent -= MessageCenter_ChangeTitleEvent;
+            MessageCenter.HideTitlebarEvent -= MessageCenter_HideTitlebarEvent;
+            this.PointerPressed -= BaseFramePage_PointerPressed;
+            Window.Current.CoreWindow.KeyDown -= CoreWindow_KeyDown;
+            BtnBack.Click -= BtnBack_Click;
+            MainFrame.Navigated -= MainFrame_Navigated;
+            base.OnNavigatedFrom(e);
+        }
 
     }
 }

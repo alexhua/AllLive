@@ -29,8 +29,6 @@ namespace AllLive.UWP
         {
             this.NavigationCacheMode = NavigationCacheMode.Enabled;
             this.InitializeComponent();
-            MessageCenter.UpdatePanelDisplayModeEvent += MessageCenter_UpdatePanelDisplayModeEvent;
-            this.KeyDown += MainPage_KeyDown;
             SetPaneMode();
             mNavigatedFromTime = DateTime.Now;
         }
@@ -79,6 +77,8 @@ namespace AllLive.UWP
             base.OnNavigatedTo(e);
             _ = BiliAccount.Instance.InitLoginInfo();
             //_ = CheckUpdate();
+            MessageCenter.UpdatePanelDisplayModeEvent += MessageCenter_UpdatePanelDisplayModeEvent;
+            this.KeyDown += MainPage_KeyDown;
             TimeSpan timeSinceLoad = DateTime.Now - mNavigatedFromTime;
             if (timeSinceLoad > TimeSpan.FromSeconds(300)) // 300秒为 TTL
             {
@@ -95,6 +95,8 @@ namespace AllLive.UWP
         {
             base.OnNavigatedFrom(e);
             mNavigatedFromTime = DateTime.Now;
+            MessageCenter.UpdatePanelDisplayModeEvent -= MessageCenter_UpdatePanelDisplayModeEvent;
+            this.KeyDown -= MainPage_KeyDown;
         }
 
         private void NavigationView_SelectionChanged(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewSelectionChangedEventArgs args)

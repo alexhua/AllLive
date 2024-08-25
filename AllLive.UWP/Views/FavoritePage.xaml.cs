@@ -20,7 +20,6 @@ namespace AllLive.UWP.Views
         public FavoritePage()
         {
             this.NavigationCacheMode = NavigationCacheMode.Enabled;
-            MessageCenter.UpdateFavoriteEvent += MessageCenter_UpdateFavoriteEvent; ;
             this.InitializeComponent();
             favoriteVM = new FavoriteVM();
         }
@@ -40,11 +39,13 @@ namespace AllLive.UWP.Views
                 favoriteVM.RefreshStatus();
             }
             Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
+            MessageCenter.UpdateFavoriteEvent += MessageCenter_UpdateFavoriteEvent;
         }
 
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             Window.Current.CoreWindow.KeyDown -= CoreWindow_KeyDown;
+            MessageCenter.UpdateFavoriteEvent -= MessageCenter_UpdateFavoriteEvent;
             favoriteVM.Items.Clear();
             base.OnNavigatingFrom(e);
         }
