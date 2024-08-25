@@ -19,19 +19,10 @@ namespace AllLive.UWP.ViewModels
         private readonly List<Task<LiveRoomDetail>> DetailTasks;
         private readonly List<Task<LiveRoomDetail>> DetailTasksShadow;
 
-        public FavoriteVM()
-        {
-            Items = new ObservableCollection<FavoriteItem>();
-            InputCommand = new RelayCommand(Input);
-            OutputCommand = new RelayCommand(Output);
-            TipCommand = new RelayCommand(Tip);
-            DetailTasks = new List<Task<LiveRoomDetail>>();
-            DetailTasksShadow = new List<Task<LiveRoomDetail>>();
-        }
-
         public ICommand InputCommand { get; set; }
         public ICommand OutputCommand { get; set; }
         public ICommand TipCommand { get; set; }
+        public ICommand RefreshStatusCommand { get; set; }
 
         private ObservableCollection<FavoriteItem> _items;
         public ObservableCollection<FavoriteItem> Items
@@ -43,10 +34,21 @@ namespace AllLive.UWP.ViewModels
 
         private bool _loadingLiveStatus;
 
-        public bool LoaddingLiveStatus
+        public bool LoadingLiveStatus
         {
             get { return _loadingLiveStatus; }
-            set { _loadingLiveStatus = value; DoPropertyChanged("LoaddingLiveStatus"); }
+            set { _loadingLiveStatus = value; DoPropertyChanged("LoadingLiveStatus"); }
+        }
+
+        public FavoriteVM()
+        {
+            Items = new ObservableCollection<FavoriteItem>();
+            InputCommand = new RelayCommand(Input);
+            OutputCommand = new RelayCommand(Output);
+            TipCommand = new RelayCommand(Tip);
+            RefreshStatusCommand = new RelayCommand(RefreshStatus);
+            DetailTasks = new List<Task<LiveRoomDetail>>();
+            DetailTasksShadow = new List<Task<LiveRoomDetail>>();
         }
 
         public async void LoadData()
@@ -56,7 +58,6 @@ namespace AllLive.UWP.ViewModels
                 Loading = true;
                 DetailTasks.Clear();
                 DetailTasksShadow.Clear();
-
                 foreach (var item in await DatabaseHelper.GetFavorites())
                 {
                     item.Title = item.SiteName;
@@ -67,7 +68,6 @@ namespace AllLive.UWP.ViewModels
                     DetailTasksShadow.Add(task);
                 }
                 IsEmpty = Items.Count == 0;
-                LoadLiveStatus();
             }
             catch (Exception ex)
             {
@@ -79,14 +79,19 @@ namespace AllLive.UWP.ViewModels
             }
         }
 
-        public async void LoadLiveStatus()
+        public async void RefreshStatus()
         {
-            LoaddingLiveStatus = true;
             LoadProgress = 0;
+            LoadingLiveStatus = true;
+            if (DetailTasks.Count == 0 || DetailTasks.Count != DetailTasksShadow.Count)
+            {
+                Refresh();
+            }
             while (DetailTasks.Count > 0)
             {
                 var finishedTask = await Task.WhenAny(DetailTasks);
                 var i = DetailTasksShadow.IndexOf(finishedTask);
+                if (i >= Items.Count) continue;
                 var item = Items[i];
                 try
                 {
@@ -119,8 +124,10 @@ namespace AllLive.UWP.ViewModels
                     //Items = new ObservableCollection<FavoriteItem>(Items.OrderByDescending(x => x.Status));
                 }
             }
+            DetailTasks.Clear();
+            DetailTasksShadow.Clear();
             LoadProgress = 1;
-            LoaddingLiveStatus = false;
+            LoadingLiveStatus = false;
         }
 
         public override void Refresh()

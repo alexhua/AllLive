@@ -20,7 +20,7 @@
         <Grid Padding="16,8">
             <TextBlock FontSize="24">我的关注</TextBlock>
             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                <Button Command="{x:Bind Path=favoriteVM.RefreshCommand}" Visibility="{x:Bind Path=favoriteVM.LoaddingLiveStatus, Mode=OneWay, Converter={StaticResource displayConvert}}">
+                <Button Command="{x:Bind Path=favoriteVM.RefreshCommand}" Visibility="{x:Bind Path=favoriteVM.Loading, Mode=OneWay, Converter={StaticResource displayConvert}}">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon
                             FontFamily="{StaticResource SegoeFluent}"
@@ -43,7 +43,7 @@
             </StackPanel>
         </Grid>
         <Grid>
-            <ProgressBar Minimum="0" Maximum="1" Value="{x:Bind Path=favoriteVM.LoadProgress, Mode=OneWay}" Visibility="{x:Bind Path=favoriteVM.LoaddingLiveStatus, Mode=OneWay}"  VerticalAlignment="Top">
+            <ProgressBar Minimum="0" Maximum="1" Value="{x:Bind Path=favoriteVM.LoadProgress, Mode=OneWay}" Visibility="{x:Bind Path=favoriteVM.LoadingLiveStatus, Mode=OneWay}"  VerticalAlignment="Top">
                 <ProgressBar.RenderTransform>
                     <ScaleTransform ScaleY="0.5" />
                 </ProgressBar.RenderTransform>
@@ -138,8 +138,8 @@
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
                 Windows10version1809:CornerRadius="24"
-                Command="{x:Bind Path=favoriteVM.RefreshCommand}"
-                Visibility="{x:Bind Path=favoriteVM.LoaddingLiveStatus, Mode=OneWay, Converter={StaticResource displayConvert}}">
+                Command="{x:Bind Path=favoriteVM.RefreshStatusCommand}"
+                Visibility="{x:Bind Path=favoriteVM.LoadingLiveStatus, Mode=OneWay, Converter={StaticResource displayConvert}}">
 
                 <FontIcon FontFamily="{StaticResource SegoeFluent}" Glyph="&#xE72C;" />
 
@@ -152,7 +152,7 @@
                 VerticalAlignment="Bottom"
                 Background="{ThemeResource ButtonBackground}"
                 CornerRadius="24"
-                Visibility="{x:Bind Path=favoriteVM.LoaddingLiveStatus, Mode=OneWay}">
+                Visibility="{x:Bind Path=favoriteVM.LoadingLiveStatus, Mode=OneWay}">
                 <ProgressRing Width="24" IsActive="True" />
             </Border>
         </Grid>

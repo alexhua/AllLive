@@ -103,7 +103,7 @@ namespace AllLive.Core
                     UserName = item["nn"].ToString(),
                 });
             }
-            categoryResult.HasMore = page < obj["data"]["pgcnt"].ToInt32();
+            categoryResult.HasMore = obj["data"]["rl"]?.AsArray().Count > 0;
             return categoryResult;
         }
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
@@ -223,7 +223,8 @@ namespace AllLive.Core
                     break;
                 }
             }
-
+            if (lineNames.Count == 0) lineNames.Add("");
+            if (cdns.Count == 0) cdns.Add("");
 
             foreach (var item in obj["data"]["multirates"].AsArray())
             {
