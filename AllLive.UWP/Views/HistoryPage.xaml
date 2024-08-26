@@ -11,7 +11,7 @@
     mc:Ignorable="d">
 
     <Grid>
-        <ProgressBar Minimum="0" Maximum ="1" Value="{x:Bind Path=historyVM.LoadProgress,Mode=OneWay}" Visibility="{x:Bind Path=historyVM.LoaddingLiveStatus, Mode=OneWay}"  VerticalAlignment="Top">
+        <ProgressBar Minimum="0" Maximum ="1" Value="{x:Bind Path=historyVM.LoadingProgress,Mode=OneWay}" Visibility="{x:Bind Path=historyVM.LoaddingLiveStatus, Mode=OneWay}"  VerticalAlignment="Top">
             <ProgressBar.RenderTransform>
                 <ScaleTransform ScaleY="0.5" />
             </ProgressBar.RenderTransform>

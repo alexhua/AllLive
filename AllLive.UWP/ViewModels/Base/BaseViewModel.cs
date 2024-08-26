@@ -32,11 +32,11 @@ namespace AllLive.UWP.ViewModels
             set { _loading = value; DoPropertyChanged("Loading"); }
         }
 
-        private double _loadProgress;
-        public double LoadProgress
+        private double _loadingProgress;
+        public double LoadingProgress
         {
-            get { return _loadProgress; }
-            set { _loadProgress = value; DoPropertyChanged(nameof(LoadProgress)); }
+            get { return _loadingProgress; }
+            set { _loadingProgress = value; DoPropertyChanged(nameof(LoadingProgress)); }
         }
 
         private bool _canLoadMore;

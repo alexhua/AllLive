@@ -95,25 +95,25 @@ watch_time DATETIME);
 
         }
 
-        public async static Task<List<FavoriteItem>> GetFavorites()
+        public async static IAsyncEnumerable<FavoriteItem> GetFavorites()
         {
-            List<FavoriteItem> favoriteItems = new List<FavoriteItem>();
-            SqliteCommand command = new SqliteCommand("SELECT * FROM Favorite", db);
-            var reader = await command.ExecuteReaderAsync();
-            while (reader.Read())
+            string query = "SELECT * FROM Favorite";
+            using (SqliteCommand command = new SqliteCommand(query, db))
+            using (var reader = await command.ExecuteReaderAsync())
             {
-                favoriteItems.Add(new FavoriteItem()
+                while (await reader.ReadAsync()) // 异步读取每一行
                 {
-                    ID = reader.GetInt32(0),
-                    RoomID = reader.GetString(4),
-                    Photo = reader.GetString(3),
-                    SiteName = reader.GetString(2),
-                    UserName = reader.GetString(1)
-                });
+                    yield return new FavoriteItem()
+                    {
+                        ID = reader.GetInt32(0),
+                        UserName = reader.GetString(1),
+                        SiteName = reader.GetString(2),
+                        Photo = reader.GetString(3),
+                        RoomID = reader.GetString(4)
+                    };
+                }
             }
-            return favoriteItems;
         }
-
 
         public static void AddHistory(HistoryItem item)
         {
@@ -171,24 +171,25 @@ watch_time DATETIME);
             command.ExecuteNonQuery();
 
         }
-        public async static Task<List<HistoryItem>> GetHistory()
+        public async static IAsyncEnumerable<HistoryItem> GetHistory()
         {
-            List<HistoryItem> favoriteItems = new List<HistoryItem>();
-            SqliteCommand command = new SqliteCommand("SELECT * FROM History ORDER BY watch_time DESC", db);
-            var reader = await command.ExecuteReaderAsync();
-            while (reader.Read())
+            string query = "SELECT * FROM History ORDER BY watch_time DESC";
+            using (SqliteCommand command = new SqliteCommand(query, db))
+            using (var reader = await command.ExecuteReaderAsync())
             {
-                favoriteItems.Add(new HistoryItem()
+                while (await reader.ReadAsync()) // 异步读取每一行
                 {
-                    ID = reader.GetInt32(0),
-                    RoomID = reader.GetString(4),
-                    Photo = reader.GetString(3),
-                    SiteName = reader.GetString(2),
-                    UserName = reader.GetString(1),
-                    WatchTime = reader.GetDateTime(5)
-                });
+                    yield return new HistoryItem()
+                    {
+                        ID = reader.GetInt32(0),
+                        RoomID = reader.GetString(4),
+                        Photo = reader.GetString(3),
+                        SiteName = reader.GetString(2),
+                        UserName = reader.GetString(1),
+                        WatchTime = reader.GetDateTime(5)
+                    };
+                }
             }
-            return favoriteItems;
         }
 
     }

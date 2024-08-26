@@ -324,15 +324,9 @@ namespace AllLive.UWP.ViewModels
             }
 
             var overlay = await ShowOverlayDialog();
-            var followList = await DatabaseHelper.GetFavorites();
-            if (followList.Count == 0)
-            {
-                ShowMessage("没有关注的直播间");
-                return;
-            }
 
             var items = new List<FavoriteJsonItem>();
-            foreach (var item in followList)
+            await foreach (var item in DatabaseHelper.GetFavorites())
             {
                 var siteId = "";
                 switch (item.SiteName)
@@ -361,6 +355,11 @@ namespace AllLive.UWP.ViewModels
                     AddTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.M")
                 });
             }
+            if (items.Count == 0)
+            {
+                ShowMessage("没有关注的直播间");
+                return;
+            }
             var json = JsonSerializer.Serialize(items);
             var resp = await connection?.InvokeAsync<Resp<int>>("SendFavorite", RoomID, overlay, json);
             if (resp.IsSuccess)
@@ -382,14 +381,8 @@ namespace AllLive.UWP.ViewModels
             }
 
             var overlay = await ShowOverlayDialog();
-            var historyList = await DatabaseHelper.GetHistory();
-            if (historyList.Count == 0)
-            {
-                ShowMessage("暂无历史记录");
-                return;
-            }
             var items = new List<HistoryJsonItem>();
-            foreach (var item in historyList)
+            await foreach (var item in DatabaseHelper.GetHistory())
             {
                 var siteId = "";
                 switch (item.SiteName)
@@ -417,6 +410,11 @@ namespace AllLive.UWP.ViewModels
                     Face = item.Photo,
                     UpdateTime = item.WatchTime.ToString("yyyy-MM-dd HH:mm:ss.M"),
                 });
+            }
+            if (items.Count == 0)
+            {
+                ShowMessage("暂无历史记录");
+                return;
             }
             var json = JsonSerializer.Serialize(items);
             var resp = await connection?.InvokeAsync<Resp<int>>("SendHistory", RoomID, overlay, json);

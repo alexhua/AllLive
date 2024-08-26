@@ -17,7 +17,6 @@ namespace AllLive.UWP.ViewModels
             Items = new ObservableCollection<HistoryItem>();
             DetailTasks = new List<Task<LiveRoomDetail>>();
             CleanCommand = new RelayCommand(Clean);
-            LoadProgress = 0;
         }
         public ICommand CleanCommand { get; set; }
 
@@ -31,13 +30,13 @@ namespace AllLive.UWP.ViewModels
             set { _loadingLiveStatus = value; DoPropertyChanged("LoaddingLiveStatus"); }
         }
 
-        public async void LoadData()
+        public async Task LoadData()
         {
             Loading = true;
             DetailTasks.Clear();
             try
             {
-                foreach (var item in await DatabaseHelper.GetHistory())
+                await foreach (var item in DatabaseHelper.GetHistory())
                 {
                     Items.Add(item);
                     var Site = MainVM.Sites.Find(x => x.Name == item.SiteName);
@@ -58,8 +57,13 @@ namespace AllLive.UWP.ViewModels
 
         public async void LoadLiveStatus()
         {
-            LoadProgress = 0;
+            Loading = true;
+            LoadingProgress = 0;
             LoaddingLiveStatus = true;
+            if (DetailTasks.Count == 0)
+            {
+                await LoadData();
+            }
             for (var i = 0; i < DetailTasks.Count; i++)
             {
                 try
@@ -76,11 +80,13 @@ namespace AllLive.UWP.ViewModels
                 }
                 finally
                 {
-                    LoadProgress += 1d / DetailTasks.Count;
+                    LoadingProgress += 1d / DetailTasks.Count;
                 }
             }
-            LoadProgress = 1;
+            DetailTasks.Clear();
+            LoadingProgress = 1;
             LoaddingLiveStatus = false;
+            Loading = false;
         }
 
         public override void Refresh()

@@ -36,7 +36,6 @@ namespace AllLive.UWP.Views
             if (favoriteVM.Items.Count == 0)
             {
                 favoriteVM.LoadData();
-                favoriteVM.RefreshStatus();
             }
             Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
             MessageCenter.UpdateFavoriteEvent += MessageCenter_UpdateFavoriteEvent;
@@ -75,7 +74,7 @@ namespace AllLive.UWP.Views
                 case Windows.System.VirtualKey.S:
                     if (!favoriteVM.Loading && favoriteVM.Items.Count != 0)
                     {
-                        favoriteVM.RefreshStatus();
+                        favoriteVM.LoadData();
                     }
                     break;
             }

@@ -42,13 +42,6 @@
                 </HyperlinkButton>
             </StackPanel>
         </Grid>
-        <Grid>
-            <ProgressBar Minimum="0" Maximum="1" Value="{x:Bind Path=favoriteVM.LoadProgress, Mode=OneWay}" Visibility="{x:Bind Path=favoriteVM.LoadingLiveStatus, Mode=OneWay}"  VerticalAlignment="Top">
-                <ProgressBar.RenderTransform>
-                    <ScaleTransform ScaleY="0.5" />
-                </ProgressBar.RenderTransform>
-            </ProgressBar>
-        </Grid>
         <Grid Grid.Row="2">
             <controls:MyAdaptiveGridView
                 Margin="8,0,8,8"
@@ -138,7 +131,7 @@
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
                 Windows10version1809:CornerRadius="24"
-                Command="{x:Bind Path=favoriteVM.RefreshStatusCommand}"
+                Command="{x:Bind Path=favoriteVM.RefreshCommand}"
                 Visibility="{x:Bind Path=favoriteVM.LoadingLiveStatus, Mode=OneWay, Converter={StaticResource displayConvert}}">
 
                 <FontIcon FontFamily="{StaticResource SegoeFluent}" Glyph="&#xE72C;" />

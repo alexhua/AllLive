@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Windows.Storage;
@@ -16,13 +17,9 @@ namespace AllLive.UWP.ViewModels
 {
     public class FavoriteVM : BaseViewModel
     {
-        private readonly List<Task<LiveRoomDetail>> DetailTasks;
-        private readonly List<Task<LiveRoomDetail>> DetailTasksShadow;
-
         public ICommand InputCommand { get; set; }
         public ICommand OutputCommand { get; set; }
         public ICommand TipCommand { get; set; }
-        public ICommand RefreshStatusCommand { get; set; }
 
         private ObservableCollection<FavoriteItem> _items;
         public ObservableCollection<FavoriteItem> Items
@@ -46,9 +43,6 @@ namespace AllLive.UWP.ViewModels
             InputCommand = new RelayCommand(Input);
             OutputCommand = new RelayCommand(Output);
             TipCommand = new RelayCommand(Tip);
-            RefreshStatusCommand = new RelayCommand(RefreshStatus);
-            DetailTasks = new List<Task<LiveRoomDetail>>();
-            DetailTasksShadow = new List<Task<LiveRoomDetail>>();
         }
 
         public async void LoadData()
@@ -56,16 +50,45 @@ namespace AllLive.UWP.ViewModels
             try
             {
                 Loading = true;
-                DetailTasks.Clear();
-                DetailTasksShadow.Clear();
-                foreach (var item in await DatabaseHelper.GetFavorites())
+                LoadingLiveStatus = true;
+                var DetailTasks = new List<Task>();
+                var exceptionalItems = new List<FavoriteItem>();
+                await foreach (var item in DatabaseHelper.GetFavorites())
                 {
                     item.Title = item.SiteName;
                     Items.Add(item);
-                    var Site = MainVM.Sites.Find(x => x.Name == item.SiteName);
-                    var task = Site.LiveSite.GetRoomDetail(item.RoomID);
-                    DetailTasks.Add(task);
-                    DetailTasksShadow.Add(task);
+                    DetailTasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var site = MainVM.Sites.Find(x => x.Name == item.SiteName);
+                            var result = await site.LiveSite.GetRoomDetail(item.RoomID);
+                            if (result.Status)
+                            {
+                                item.Status = result.Status;
+                                item.Cover = result.Cover;
+                                if (!string.IsNullOrEmpty(result.Title))
+                                {
+                                    item.Title += $" - {result.Title}";
+                                }
+                                if (!item.UserName.Equals(result.UserName) || !item.Photo.Equals(result.UserAvatar))
+                                {
+                                    item.UserName = result.UserName;
+                                    item.Photo = result.UserAvatar;
+                                    DatabaseHelper.UpdateFavorite(item);
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            exceptionalItems.Add(item);
+                        }
+                    }));
+                }
+                Task.WaitAll(DetailTasks.ToArray());
+                foreach (var item in exceptionalItems)
+                {
+                    Utils.ShowMessageToast($"{item.UserName}的房间: {item.RoomID}，获取信息异常。");
                 }
                 IsEmpty = Items.Count == 0;
             }
@@ -76,58 +99,8 @@ namespace AllLive.UWP.ViewModels
             finally
             {
                 Loading = false;
+                LoadingLiveStatus = false;
             }
-        }
-
-        public async void RefreshStatus()
-        {
-            LoadProgress = 0;
-            LoadingLiveStatus = true;
-            if (DetailTasks.Count == 0 || DetailTasks.Count != DetailTasksShadow.Count)
-            {
-                Refresh();
-            }
-            while (DetailTasks.Count > 0)
-            {
-                var finishedTask = await Task.WhenAny(DetailTasks);
-                var i = DetailTasksShadow.IndexOf(finishedTask);
-                if (i >= Items.Count) continue;
-                var item = Items[i];
-                try
-                {
-                    var result = await finishedTask;
-                    if (result.Status)
-                    {
-                        item.Status = result.Status;
-                        item.Cover = result.Cover;
-                        if (!string.IsNullOrEmpty(result.Title))
-                        {
-                            item.Title += $" - {result.Title}";
-                        }
-                        if (!item.UserName.Equals(result.UserName) || !item.Photo.Equals(result.UserAvatar))
-                        {
-                            item.UserName = result.UserName;
-                            item.Photo = result.UserAvatar;
-                            DatabaseHelper.UpdateFavorite(item);
-                        }
-                    }
-                }
-                catch
-                {
-                    Utils.ShowMessageToast($"{item.UserName}的房间: {item.RoomID}，获取信息异常。");
-                }
-                finally
-                {
-                    DetailTasks.Remove(finishedTask);
-                    LoadProgress += 1d / Items.Count;
-                    // 排序，直播的在前面
-                    //Items = new ObservableCollection<FavoriteItem>(Items.OrderByDescending(x => x.Status));
-                }
-            }
-            DetailTasks.Clear();
-            DetailTasksShadow.Clear();
-            LoadProgress = 1;
-            LoadingLiveStatus = false;
         }
 
         public override void Refresh()
