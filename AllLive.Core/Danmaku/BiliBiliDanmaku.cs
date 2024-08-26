@@ -61,7 +61,6 @@ namespace AllLive.Core.Danmaku
                 }
                 catch (Exception)
                 {
-                    break;
                 }
             }
             if (WsClient.State != WebSocketState.Open)

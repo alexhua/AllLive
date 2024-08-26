@@ -112,18 +112,18 @@ namespace AllLive.Core.Danmaku
                     OnClose();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                OnError();
+                OnError(ex.Message);
             }
         }
 
         private async void ReceiveMessage()
         {
             var buffer = new byte[8192];
-            try
+            while (WsClient.State == WebSocketState.Open)
             {
-                while (WsClient.State == WebSocketState.Open)
+                try
                 {
                     var result = WsClient.ReceiveAsync(new ArraySegment<byte>(buffer), default).Result;
                     var wssPackage = DeserializeProto<PushFrame>(buffer, 0, result.Count);
@@ -136,7 +136,6 @@ namespace AllLive.Core.Danmaku
                         {
                             SendACKData(logId ?? 0, payloadPackage.internalExt);
                         });
-
                     }
 
                     foreach (var msg in payloadPackage.messagesLists)
@@ -151,13 +150,12 @@ namespace AllLive.Core.Danmaku
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
             }
-            catch (Exception ex)
-            {
-                OnError();
-                Debug.WriteLine(ex.Message);
-                return;
-            }
+
             if (WsClient.State != WebSocketState.Open)
             {
                 OnClose();
@@ -208,9 +206,9 @@ namespace AllLive.Core.Danmaku
             CloseEvent?.Invoke(this, WsClient.State.ToString());
         }
 
-        private void OnError()
+        private void OnError(string message)
         {
-            CloseEvent?.Invoke(this, WsClient.State.ToString());
+            CloseEvent?.Invoke(this, message);
         }
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
