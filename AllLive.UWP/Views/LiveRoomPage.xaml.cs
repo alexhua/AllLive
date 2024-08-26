@@ -41,6 +41,7 @@ namespace AllLive.UWP.Views
         readonly MediaPlayer mediaPlayer;
 
         DisplayRequest dispRequest;
+        private bool isDispActive = false;
         PageArgs pageArgs;
         //当前处于小窗
         private bool isMini = false;
@@ -111,18 +112,12 @@ namespace AllLive.UWP.Views
                 if (index == liveRoomVM.Lines.Count - 1)
                 {
                     liveRoomVM.Living = false;
-                    try
-                    {
-                        dispRequest.RequestRelease();
-                    }
-                    catch (Exception)
-                    {
-                    }
                 }
                 else
                 {
                     liveRoomVM.CurrentLine = liveRoomVM.Lines[index + 1];
                 }
+                RequestDisplay(false);
             });
         }
 
@@ -156,10 +151,9 @@ namespace AllLive.UWP.Views
         {
             await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
             {
-
+                RequestDisplay(false);
                 PlayError();
             });
-
         }
 
         private async void MediaPlayer_MediaOpened(MediaPlayer sender, object args)
@@ -167,7 +161,7 @@ namespace AllLive.UWP.Views
             await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
             {
                 //保持屏幕常亮
-                dispRequest.RequestActive();
+                RequestDisplay(true);
                 PlayerLoading.Visibility = Visibility.Collapsed;
                 SetMediaInfo();
             });
@@ -193,7 +187,7 @@ namespace AllLive.UWP.Views
                         PlayerLoading.Visibility = Visibility.Collapsed;
                         PlayBtnPlay.Visibility = Visibility.Collapsed;
                         PlayBtnPause.Visibility = Visibility.Visible;
-                        dispRequest.RequestActive();
+                        RequestDisplay(true);
                         liveRoomVM.Living = true;
                         SetMediaInfo();
                         break;
@@ -499,8 +493,11 @@ namespace AllLive.UWP.Views
             if (index == liveRoomVM.Lines.Count - 1)
             {
                 PlayerLoading.Visibility = Visibility.Collapsed;
-                LogHelper.Log("直播加载失败", LogType.ERROR, new Exception("直播加载失败"));
-                await new MessageDialog($"啊，播放失败了，请尝试以下操作\r\n1、更换清晰度或线路\r\n2、请尝试在直播设置中打开/关闭硬解试试", "播放失败").ShowAsync();
+                if (liveRoomVM.Living)
+                {
+                    LogHelper.Log("直播加载失败", LogType.ERROR, new Exception("直播加载失败"));
+                    await new MessageDialog($"啊，播放失败了，请尝试以下操作\r\n1、更换清晰度或线路\r\n2、请尝试在直播设置中打开/关闭硬解试试", "播放失败").ShowAsync();
+                }
             }
             else
             {
@@ -530,18 +527,8 @@ namespace AllLive.UWP.Views
             SetFullScreen(false);
             MiniWidnows(false);
             //取消屏幕常亮
-            if (dispRequest != null)
-            {
-                try
-                {
-                    dispRequest.RequestRelease();
-                }
-                catch (Exception)
-                {
-                }
-
-                dispRequest = null;
-            }
+            RequestDisplay(false);
+            dispRequest = null;
         }
         private void ControlTimer_Tick(object sender, object e)
         {
@@ -1352,6 +1339,28 @@ namespace AllLive.UWP.Views
                 PrimaryButtonText = "确定"
             };
             _ = dialog.ShowAsync();
+        }
+
+        private void RequestDisplay(bool on)
+        {
+            if (dispRequest == null) return;
+
+            try
+            {
+                if (on && !isDispActive)
+                {
+                    dispRequest.RequestActive();
+                    isDispActive = true;
+                }
+                else if (!on && isDispActive)
+                {
+                    dispRequest.RequestRelease();
+                    isDispActive = false;
+                }
+            }
+            catch
+            {
+            }
         }
     }
 }
