@@ -74,7 +74,7 @@ namespace AllLive.UWP.Views
                 case Windows.System.VirtualKey.S:
                     if (!favoriteVM.Loading && favoriteVM.Items.Count != 0)
                     {
-                        favoriteVM.LoadData();
+                        favoriteVM.Refresh();
                     }
                     break;
             }

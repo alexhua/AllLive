@@ -17,6 +17,13 @@
             <RowDefinition Height="Auto" />
             <RowDefinition />
         </Grid.RowDefinitions>
+        <Grid>
+            <ProgressBar Minimum="0" Maximum ="1" Value="{x:Bind Path=favoriteVM.LoadingProgress, Mode=OneWay}" Visibility="{x:Bind Path=favoriteVM.LoadingLiveStatus, Mode=OneWay}"  VerticalAlignment="Top">
+                <ProgressBar.RenderTransform>
+                    <ScaleTransform ScaleY="0.5" />
+                </ProgressBar.RenderTransform>
+            </ProgressBar>
+        </Grid>
         <Grid Padding="16,8">
             <TextBlock FontSize="24">我的关注</TextBlock>
             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
@@ -89,12 +96,15 @@
                                 Grid.Column="1"
                                 Margin="8,0,0,0"
                                 VerticalAlignment="Center">
-                                <TextBlock Text="{x:Bind Path=UserName}" />
+                                <TextBlock Text="{x:Bind Path=UserName, Mode=OneWay}" />
                                 <TextBlock
-                                    Margin="0,4,0,0"
+                                    Margin="0,4,30,0"
                                     FontSize="12"
-                                    Foreground="Gray"
-                                    Text="{x:Bind Path=Title}" />
+                                    Foreground="DimGray"
+                                    TextWrapping="NoWrap" 
+                                    TextTrimming="CharacterEllipsis" 
+                                    Text="{x:Bind Path=Title, Mode=OneWay}"
+                                    ToolTipService.ToolTip="{x:Bind Path=Title, Mode=OneWay}" />
                             </StackPanel>
                             <toolkit:ImageEx Grid.Column="2" x:Name="ImageExControl" IsCacheEnabled="True" Stretch="UniformToFill" Width="Auto" Margin="3 0 0 0"
                                 Source="{Binding Path=Cover}" HorizontalAlignment="Right" CornerRadius="10" Opacity="0.36">

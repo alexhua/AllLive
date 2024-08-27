@@ -11,11 +11,9 @@ namespace AllLive.UWP.ViewModels
 {
     public class HistoryVM : BaseViewModel
     {
-        readonly List<Task<LiveRoomDetail>> DetailTasks;
         public HistoryVM()
         {
             Items = new ObservableCollection<HistoryItem>();
-            DetailTasks = new List<Task<LiveRoomDetail>>();
             CleanCommand = new RelayCommand(Clean);
         }
         public ICommand CleanCommand { get; set; }
@@ -24,26 +22,54 @@ namespace AllLive.UWP.ViewModels
 
         private bool _loadingLiveStatus;
 
-        public bool LoaddingLiveStatus
+        public bool LoadingLiveStatus
         {
             get { return _loadingLiveStatus; }
-            set { _loadingLiveStatus = value; DoPropertyChanged("LoaddingLiveStatus"); }
+            set { _loadingLiveStatus = value; DoPropertyChanged("LoadingLiveStatus"); }
         }
 
-        public async Task LoadData()
+        public async void LoadData()
         {
             Loading = true;
-            DetailTasks.Clear();
+            LoadingLiveStatus = true;
+            LoadingProgress = 0;
+            var detailTasks = new List<Task<HistoryItem>>();
             try
             {
                 await foreach (var item in DatabaseHelper.GetHistory())
                 {
                     Items.Add(item);
-                    var Site = MainVM.Sites.Find(x => x.Name == item.SiteName);
-                    var detailTask = Site.LiveSite.GetRoomDetail(item.RoomID);
-                    DetailTasks.Add(detailTask);
+                    detailTasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var Site = MainVM.Sites.Find(x => x.Name == item.SiteName);
+                            item.Title = Site.Name;
+                            var detail = await Site.LiveSite.GetRoomDetail(item.RoomID);
+                            item.Status = detail.Status;
+                            if (!string.IsNullOrEmpty(detail.Title))
+                            {
+                                item.Title += $" - {detail.Title}";
+                            }
+                        }
+                        catch
+                        {
+                            return item;
+                        }
+                        return null;
+                    }));
                 }
-                IsEmpty = Items.Count == 0;
+                while (detailTasks.Count > 0)
+                {
+                    var task = await Task.WhenAny(detailTasks);
+                    var item = await task;
+                    if (item != null)
+                    {
+                        Utils.ShowMessageToast($"{item.UserName}的房间: {item.RoomID}，获取信息异常。");
+                    }
+                    detailTasks.Remove(task);
+                    LoadingProgress += 1d / Items.Count;
+                }
             }
             catch (Exception ex)
             {
@@ -51,42 +77,11 @@ namespace AllLive.UWP.ViewModels
             }
             finally
             {
+                IsEmpty = Items.Count == 0;
+                LoadingProgress = 1;
                 Loading = false;
+                LoadingLiveStatus = false;
             }
-        }
-
-        public async void LoadLiveStatus()
-        {
-            Loading = true;
-            LoadingProgress = 0;
-            LoaddingLiveStatus = true;
-            if (DetailTasks.Count == 0)
-            {
-                await LoadData();
-            }
-            for (var i = 0; i < DetailTasks.Count; i++)
-            {
-                try
-                {
-                    var roomDetail = await DetailTasks[i];
-                    if (roomDetail != null && roomDetail.Status)
-                    {
-                        Items[i].Status = roomDetail.Status;
-                    }
-                }
-                catch
-                {
-                    Utils.ShowMessageToast($"{Items[i].UserName}的房间: {Items[i].RoomID}，获取信息异常。");
-                }
-                finally
-                {
-                    LoadingProgress += 1d / DetailTasks.Count;
-                }
-            }
-            DetailTasks.Clear();
-            LoadingProgress = 1;
-            LoaddingLiveStatus = false;
-            Loading = false;
         }
 
         public override void Refresh()
@@ -94,7 +89,6 @@ namespace AllLive.UWP.ViewModels
             base.Refresh();
             Items.Clear();
             LoadData();
-            LoadLiveStatus();
         }
 
         public void RemoveItem(HistoryItem item)
@@ -111,6 +105,7 @@ namespace AllLive.UWP.ViewModels
             }
 
         }
+
         public async void Clean()
         {
             try

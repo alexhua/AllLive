@@ -11,7 +11,7 @@
     mc:Ignorable="d">
 
     <Grid>
-        <ProgressBar Minimum="0" Maximum ="1" Value="{x:Bind Path=historyVM.LoadingProgress,Mode=OneWay}" Visibility="{x:Bind Path=historyVM.LoaddingLiveStatus, Mode=OneWay}"  VerticalAlignment="Top">
+        <ProgressBar Minimum="0" Maximum ="1" Value="{x:Bind Path=historyVM.LoadingProgress, Mode=OneWay}" Visibility="{x:Bind Path=historyVM.LoadingLiveStatus, Mode=OneWay}"  VerticalAlignment="Top">
             <ProgressBar.RenderTransform>
                 <ScaleTransform ScaleY="0.5" />
             </ProgressBar.RenderTransform>
@@ -62,11 +62,20 @@
                             Margin="8,0,0,0"
                             VerticalAlignment="Center">
                             <TextBlock Text="{x:Bind Path=UserName}" />
+                            <TextBlock Text="{x:Bind Path=Title, Mode=OneWay}"
+                                 Margin="0,4,30,0"
+                                 FontSize="12"
+                                 TextWrapping="NoWrap" 
+                                 Foreground="DimGray"
+                                 TextTrimming="CharacterEllipsis" 
+                                 ToolTipService.ToolTip="{x:Bind Path=Title, Mode=OneWay}">
+                            </TextBlock>
                             <TextBlock
                                 Margin="0,4,0,0"
-                                FontSize="12"
+                                FontSize="11"
+                                HorizontalAlignment="Right"
                                 Foreground="Gray">
-                                观看于<Run Text="{x:Bind Path=WatchTime}" />
+                                观看于<Run Text="{x:Bind Path=WatchTime, Mode=OneWay}" />
                             </TextBlock>
                         </StackPanel>
                         <SymbolIcon Grid.Column="2" Height="36" Width="36" Foreground="#3855BD" VerticalAlignment="Center" HorizontalAlignment="Right" 

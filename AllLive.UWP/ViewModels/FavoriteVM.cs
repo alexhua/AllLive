@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Windows.Storage;
@@ -27,7 +26,6 @@ namespace AllLive.UWP.ViewModels
             get { return _items; }
             set { _items = value; DoPropertyChanged("Items"); }
         }
-
 
         private bool _loadingLiveStatus;
 
@@ -51,46 +49,56 @@ namespace AllLive.UWP.ViewModels
             {
                 Loading = true;
                 LoadingLiveStatus = true;
-                var DetailTasks = new List<Task>();
-                var exceptionalItems = new List<FavoriteItem>();
+                LoadingProgress = 0;
+                var detailTasks = new List<Task<Tuple<FavoriteItem, LiveRoomDetail>>>();
                 await foreach (var item in DatabaseHelper.GetFavorites())
                 {
                     item.Title = item.SiteName;
                     Items.Add(item);
-                    DetailTasks.Add(Task.Run(async () =>
+                    detailTasks.Add(Task.Run(async () =>
                     {
+                        LiveRoomDetail result = null;
                         try
                         {
                             var site = MainVM.Sites.Find(x => x.Name == item.SiteName);
-                            var result = await site.LiveSite.GetRoomDetail(item.RoomID);
-                            if (result.Status)
-                            {
-                                item.Status = result.Status;
-                                item.Cover = result.Cover;
-                                if (!string.IsNullOrEmpty(result.Title))
-                                {
-                                    item.Title += $" - {result.Title}";
-                                }
-                                if (!item.UserName.Equals(result.UserName) || !item.Photo.Equals(result.UserAvatar))
-                                {
-                                    item.UserName = result.UserName;
-                                    item.Photo = result.UserAvatar;
-                                    DatabaseHelper.UpdateFavorite(item);
-                                }
-                            }
+                            result = await site.LiveSite.GetRoomDetail(item.RoomID);
                         }
                         catch
                         {
-                            exceptionalItems.Add(item);
                         }
+                        return new Tuple<FavoriteItem, LiveRoomDetail>(item, result);
                     }));
                 }
-                Task.WaitAll(DetailTasks.ToArray());
-                foreach (var item in exceptionalItems)
+                while (detailTasks.Count > 0)
                 {
-                    Utils.ShowMessageToast($"{item.UserName}的房间: {item.RoomID}，获取信息异常。");
+                    Task<Tuple<FavoriteItem, LiveRoomDetail>> task = await Task.WhenAny(detailTasks);
+                    var result = await task;
+                    var item = result.Item1; var detail = result.Item2;
+                    if (detail != null)
+                    {
+                        if (detail.Status)
+                        {
+                            item.Status = detail.Status;
+                            item.Cover = detail.Cover;
+                            if (!string.IsNullOrEmpty(detail.Title))
+                            {
+                                item.Title += $" - {detail.Title}";
+                            }
+                            if (!item.UserName.Equals(detail.UserName) || !item.Photo.Equals(detail.UserAvatar))
+                            {
+                                item.UserName = detail.UserName;
+                                item.Photo = detail.UserAvatar;
+                                DatabaseHelper.UpdateFavorite(item);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Utils.ShowMessageToast($"{item.UserName}的房间: {item.RoomID}，获取信息异常。");
+                    }
+                    detailTasks.Remove(task);
+                    LoadingProgress += 1d / Items.Count;
                 }
-                IsEmpty = Items.Count == 0;
             }
             catch (Exception ex)
             {
@@ -98,6 +106,8 @@ namespace AllLive.UWP.ViewModels
             }
             finally
             {
+                IsEmpty = Items.Count == 0;
+                LoadingProgress = 1;
                 Loading = false;
                 LoadingLiveStatus = false;
             }

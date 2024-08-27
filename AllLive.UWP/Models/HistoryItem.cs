@@ -13,7 +13,9 @@ namespace AllLive.UWP.Models
         public string SiteName { get; set; }
         public DateTime WatchTime { get; set; }
         private bool status;
-        public bool Status { get { return status; } set { status = value; notifyPropertyChanged(); } }
+        private string title;
+        public bool Status { get { return status; } set { status = value; notifyPropertyChanged(nameof(Status)); } }
+        public string Title { get { return title; } set { title = value; notifyPropertyChanged(nameof(Title)); } }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void notifyPropertyChanged([CallerMemberName] string name = null)
