@@ -4,6 +4,7 @@ using AllLive.UWP.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -33,7 +34,10 @@ namespace AllLive.UWP.ViewModels
             Loading = true;
             LoadingLiveStatus = true;
             LoadingProgress = 0;
-            var detailTasks = new List<Task<HistoryItem>>();
+            var detailTasks = new List<Task>();
+            var uiContext = SynchronizationContext.Current;
+            ThreadPool.GetMaxThreads(out int worker, out int port);
+            ThreadPool.SetMaxThreads(8, 8); // Avoid triggering http 4xx error
             try
             {
                 await foreach (var item in DatabaseHelper.GetHistory())
@@ -46,27 +50,28 @@ namespace AllLive.UWP.ViewModels
                             var Site = MainVM.Sites.Find(x => x.Name == item.SiteName);
                             item.Title = Site.Name;
                             var detail = await Site.LiveSite.GetRoomDetail(item.RoomID);
-                            item.Status = detail.Status;
-                            if (!string.IsNullOrEmpty(detail.Title))
+                            uiContext.Post(state =>
                             {
-                                item.Title += $" - {detail.Title}";
-                            }
+                                item.Status = detail.Status;
+                                if (!string.IsNullOrEmpty(detail.Title))
+                                {
+                                    item.Title += $" - {detail.Title}";
+                                }
+
+                            }, null);
                         }
                         catch
                         {
-                            return item;
+                            uiContext.Post(state =>
+                            {
+                                Utils.ShowMessageToast($"{item.UserName}的房间: {item.RoomID}，获取信息异常。");
+                            }, null);
                         }
-                        return null;
                     }));
                 }
                 while (detailTasks.Count > 0)
                 {
                     var task = await Task.WhenAny(detailTasks);
-                    var item = await task;
-                    if (item != null)
-                    {
-                        Utils.ShowMessageToast($"{item.UserName}的房间: {item.RoomID}，获取信息异常。");
-                    }
                     detailTasks.Remove(task);
                     LoadingProgress += 1d / Items.Count;
                 }
@@ -81,6 +86,7 @@ namespace AllLive.UWP.ViewModels
                 LoadingProgress = 1;
                 Loading = false;
                 LoadingLiveStatus = false;
+                ThreadPool.SetMaxThreads(worker, port);
             }
         }
 

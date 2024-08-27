@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Windows.Storage;
@@ -50,52 +51,50 @@ namespace AllLive.UWP.ViewModels
                 Loading = true;
                 LoadingLiveStatus = true;
                 LoadingProgress = 0;
-                var detailTasks = new List<Task<Tuple<FavoriteItem, LiveRoomDetail>>>();
+                var detailTasks = new List<Task>();
+                var uiContext = SynchronizationContext.Current;
                 await foreach (var item in DatabaseHelper.GetFavorites())
                 {
                     item.Title = item.SiteName;
                     Items.Add(item);
                     detailTasks.Add(Task.Run(async () =>
                     {
-                        LiveRoomDetail result = null;
                         try
                         {
                             var site = MainVM.Sites.Find(x => x.Name == item.SiteName);
-                            result = await site.LiveSite.GetRoomDetail(item.RoomID);
+                            var detail = await site.LiveSite.GetRoomDetail(item.RoomID);
+                            uiContext.Post(state =>
+                            {
+                                if (detail.Status)
+                                {
+                                    item.Status = detail.Status;
+                                    item.Cover = detail.Cover;
+                                    if (!string.IsNullOrEmpty(detail.Title))
+                                    {
+                                        item.Title += $" - {detail.Title}";
+                                    }
+                                    if (!item.UserName.Equals(detail.UserName) || !item.Photo.Equals(detail.UserAvatar))
+                                    {
+                                        item.UserName = detail.UserName;
+                                        item.Photo = detail.UserAvatar;
+                                        DatabaseHelper.UpdateFavorite(item);
+                                    }
+                                }
+                            }, null);
+
                         }
                         catch
                         {
+                            uiContext.Post((state) =>
+                            {
+                                Utils.ShowMessageToast($"{item.UserName}的房间: {item.RoomID}，获取信息异常。");
+                            }, null);
                         }
-                        return new Tuple<FavoriteItem, LiveRoomDetail>(item, result);
                     }));
                 }
                 while (detailTasks.Count > 0)
                 {
-                    Task<Tuple<FavoriteItem, LiveRoomDetail>> task = await Task.WhenAny(detailTasks);
-                    var result = await task;
-                    var item = result.Item1; var detail = result.Item2;
-                    if (detail != null)
-                    {
-                        if (detail.Status)
-                        {
-                            item.Status = detail.Status;
-                            item.Cover = detail.Cover;
-                            if (!string.IsNullOrEmpty(detail.Title))
-                            {
-                                item.Title += $" - {detail.Title}";
-                            }
-                            if (!item.UserName.Equals(detail.UserName) || !item.Photo.Equals(detail.UserAvatar))
-                            {
-                                item.UserName = detail.UserName;
-                                item.Photo = detail.UserAvatar;
-                                DatabaseHelper.UpdateFavorite(item);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        Utils.ShowMessageToast($"{item.UserName}的房间: {item.RoomID}，获取信息异常。");
-                    }
+                    var task = await Task.WhenAny(detailTasks);
                     detailTasks.Remove(task);
                     LoadingProgress += 1d / Items.Count;
                 }

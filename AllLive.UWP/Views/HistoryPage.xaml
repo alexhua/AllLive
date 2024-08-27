@@ -102,9 +102,7 @@
                 Windows10version1809:CornerRadius="24"
                 Command="{x:Bind Path=historyVM.CleanCommand}"
                 Visibility="{x:Bind Path=historyVM.Loading, Mode=OneWay, Converter={StaticResource displayConvert}}">
-
                 <SymbolIcon Symbol="Delete" />
-
             </Button>
             <Button
                 Width="48"
@@ -113,10 +111,19 @@
                 Windows10version1809:CornerRadius="24"
                 Command="{x:Bind Path=historyVM.RefreshCommand}"
                 Visibility="{x:Bind Path=historyVM.Loading, Mode=OneWay, Converter={StaticResource displayConvert}}">
-
                 <SymbolIcon Symbol="Refresh" />
-
             </Button>
+            <Border
+                Width="48"
+                Height="48"
+                Margin="12"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Background="{ThemeResource ButtonBackground}"
+                CornerRadius="24"
+                Visibility="{x:Bind Path=historyVM.LoadingLiveStatus, Mode=OneWay}">
+                <ProgressRing Width="24" IsActive="True" />
+            </Border>
         </StackPanel>
     </Grid>
 </Page>
